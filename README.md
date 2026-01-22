@@ -97,44 +97,53 @@ Below is the logical flow of the system handling a booking request.
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant API as Node API
-    participant Redis
-    participant DB as Postgres
-    participant Metrics as Prometheus
-
-    User->>API: POST /book-seat (SeatID: 10)
+    autonumber
     
-    rect rgb(255, 230, 230)
-    Note right of API: Critical Section (Race Condition Protection)
+    %% DEFINING PARTICIPANTS WITH ICONS
+    actor User as 👤 User
+    participant API as 🟢 Node API
+    participant Redis as 🔴 Redis
+    participant DB as 🐘 Postgres
+    participant Metrics as 🔥 Prometheus
+
+    %% FLOW START
+    User->>API: ⚡ POST /book-seat (SeatID: 10)
+    
+    %% CRITICAL SECTION BLOCK
+    rect rgb(255, 248, 225)
+    Note right of API: 🔒 CRITICAL SECTION (Race Condition Protection)
+    
     API->>Redis: SET seat_10_lock true NX EX 10
-    alt Lock Failed (Already Locked)
+    
+    alt ❌ Lock Failed (Already Locked)
         Redis-->>API: 0 (False)
-        API-->>User: 423 Locked / Retry Later
-    else Lock Acquired
+        API-->>User: 🚫 423 Locked / Retry Later
+    else ✅ Lock Acquired
         Redis-->>API: OK
+        
+        Note over API, DB: Start ACID Transaction
         API->>DB: BEGIN TRANSACTION
         API->>DB: SELECT * FROM seats WHERE id=10 FOR UPDATE
         
-        alt Seat Already Booked
+        alt ⚠️ Seat Already Booked
             DB-->>API: is_booked = true
             API->>DB: ROLLBACK
-            API-->>User: 400 Seat Gone
-            API->>Metrics: Inc booking_failed_oversold
-        else Seat Available
+            API-->>User: ❌ 400 Seat Gone
+            API->>Metrics: 📈 Inc booking_failed_oversold
+        else 🎫 Seat Available
             DB-->>API: is_booked = false
             API->>DB: UPDATE seats SET is_booked=true
             API->>DB: INSERT into bookings...
             API->>DB: COMMIT
-            API-->>User: 200 Success
-            API->>Metrics: Inc booking_success_total
+            API-->>User: 🎉 200 Success
+            API->>Metrics: 📈 Inc booking_success_total
         end
         
         API->>Redis: DEL seat_10_lock
     end
     end
     
-    Metrics->>API: Scrape /metrics
+    Metrics->>API: 🔍 Scrape /metrics
 ```
 
 ## 5. Why This Project Impresses Interviewers

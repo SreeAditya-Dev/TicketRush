@@ -10,10 +10,10 @@ export default function PaymentPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    
+
     // State from BookingPage
-    const { selectedSeats, totalAmount, date, time } = location.state || { 
-        selectedSeats: [], totalAmount: 0, date: "N/A", time: "N/A" 
+    const { selectedSeats, totalAmount, date, time } = location.state || {
+        selectedSeats: [], totalAmount: 0, date: "N/A", time: "N/A"
     };
 
     const [paymentMethod, setPaymentMethod] = useState<"card" | "gpay">("gpay");
@@ -21,7 +21,7 @@ export default function PaymentPage() {
     const [processing, setProcessing] = useState(false);
     const [success, setSuccess] = useState(false);
     const [customQrUrl, setCustomQrUrl] = useState("");
-    
+
     const ticketRef = useRef<HTMLDivElement>(null);
 
     const handlePayment = async () => {
@@ -31,10 +31,10 @@ export default function PaymentPage() {
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Book each seat
-            const promises = selectedSeats.map((code: string) => 
+            const promises = selectedSeats.map((code: string) =>
                 bookSeat(code, userId, "locked", date, time)
             );
-            
+
             await Promise.all(promises);
             setSuccess(true);
         } catch (error) {
@@ -47,20 +47,22 @@ export default function PaymentPage() {
 
     const downloadTicket = async () => {
         if (!ticketRef.current) return;
-        
+
         try {
             const canvas = await html2canvas(ticketRef.current, {
                 backgroundColor: "#0b0c15",
-                scale: 2
+                scale: 2,
+                useCORS: true,       // Added for external images
+                allowTaint: true,    // Added permissions
             });
             const imgData = canvas.toDataURL("image/png");
-            
+
             const pdf = new jsPDF({
                 orientation: "portrait",
                 unit: "px",
                 format: [canvas.width / 2, canvas.height / 2]
             });
-            
+
             pdf.addImage(imgData, "PNG", 0, 0, canvas.width / 2, canvas.height / 2);
             pdf.save("TicketRush-Pass.pdf");
         } catch (err) {
@@ -83,10 +85,11 @@ export default function PaymentPage() {
                 <div ref={ticketRef} className="bg-theatre-800 border border-theatre-700 rounded-3xl overflow-hidden max-w-sm w-full shadow-2xl relative mb-8">
                     {/* Top Section */}
                     <div className="relative h-48">
-                        <img 
-                            src="https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=1000&auto=format&fit=crop" 
+                        <img
+                            src="https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=1000&auto=format&fit=crop"
                             className="w-full h-full object-cover"
                             alt="Concert"
+                            crossOrigin="anonymous" // Added CORS header
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-theatre-900 to-transparent" />
                         <div className="absolute bottom-4 left-6">
@@ -119,7 +122,7 @@ export default function PaymentPage() {
                             </div>
                             <div>
                                 <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Seats</div>
-                                <div className="font-semibold text-brand-gold">{selectedSeats.map(s => s.replace('S','')).join(', ')}</div>
+                                <div className="font-semibold text-brand-gold">{selectedSeats.map(s => s.replace('S', '')).join(', ')}</div>
                             </div>
                         </div>
 
@@ -136,13 +139,13 @@ export default function PaymentPage() {
                 </div>
 
                 <div className="flex gap-4">
-                    <button 
+                    <button
                         onClick={downloadTicket}
                         className="bg-brand-purple hover:bg-violet-600 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-colors"
                     >
                         <Download className="w-5 h-5" /> Download PDF
                     </button>
-                    <button 
+                    <button
                         onClick={() => navigate('/')}
                         className="bg-theatre-700 hover:bg-theatre-600 text-white font-bold py-3 px-6 rounded-xl transition-colors"
                     >
@@ -163,11 +166,11 @@ export default function PaymentPage() {
                 {/* Order Summary */}
                 <div className="space-y-6">
                     <h1 className="text-3xl font-bold text-white mb-2">Order Summary</h1>
-                    
+
                     <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 shadow-xl">
                         <div className="flex gap-4 mb-6 pb-6 border-b border-theatre-700">
-                            <img 
-                                src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=200&auto=format&fit=crop" 
+                            <img
+                                src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=200&auto=format&fit=crop"
                                 className="w-24 h-24 rounded-lg object-cover"
                                 alt="Show"
                             />
@@ -210,22 +213,20 @@ export default function PaymentPage() {
                     <div className="grid grid-cols-2 gap-4 mb-6">
                         <button
                             onClick={() => setPaymentMethod("gpay")}
-                            className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
-                                paymentMethod === "gpay" 
-                                ? "bg-brand-purple/20 border-brand-purple text-white shadow-glow-purple" 
-                                : "bg-theatre-800 border-theatre-700 text-slate-400 hover:bg-theatre-700"
-                            }`}
+                            className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${paymentMethod === "gpay"
+                                    ? "bg-brand-purple/20 border-brand-purple text-white shadow-glow-purple"
+                                    : "bg-theatre-800 border-theatre-700 text-slate-400 hover:bg-theatre-700"
+                                }`}
                         >
                             <Smartphone className="w-6 h-6" />
                             <span className="font-medium">Google Pay</span>
                         </button>
                         <button
                             onClick={() => setPaymentMethod("card")}
-                            className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
-                                paymentMethod === "card" 
-                                ? "bg-brand-purple/20 border-brand-purple text-white shadow-glow-purple" 
-                                : "bg-theatre-800 border-theatre-700 text-slate-400 hover:bg-theatre-700"
-                            }`}
+                            className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${paymentMethod === "card"
+                                    ? "bg-brand-purple/20 border-brand-purple text-white shadow-glow-purple"
+                                    : "bg-theatre-800 border-theatre-700 text-slate-400 hover:bg-theatre-700"
+                                }`}
                         >
                             <CreditCard className="w-6 h-6" />
                             <span className="font-medium">Card</span>
@@ -236,20 +237,19 @@ export default function PaymentPage() {
                         <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 text-center animate-in fade-in zoom-in duration-300">
                             <div className="mb-4">
                                 <label className="block text-sm text-slate-400 mb-2 text-left">Your UPI QR Code URL (Optional)</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="Paste image URL of your QR..." 
+                                <input
+                                    type="text"
+                                    placeholder="Paste image URL of your QR..."
                                     value={customQrUrl}
                                     onChange={(e) => setCustomQrUrl(e.target.value)}
                                     className="w-full bg-theatre-900 border border-theatre-600 rounded-lg px-4 py-2 text-white text-sm focus:border-brand-purple focus:outline-none mb-4"
                                 />
                             </div>
-                            
+
                             <div className="bg-white p-4 rounded-xl inline-block mb-4">
-                                {/* Use user provided URL or a generic placeholder */}
-                                <img 
-                                    src={customQrUrl || "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"} 
-                                    alt="Payment QR" 
+                                <img
+                                    src={customQrUrl || "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"}
+                                    alt="Payment QR"
                                     className="w-48 h-48 object-contain"
                                 />
                             </div>
@@ -269,7 +269,7 @@ export default function PaymentPage() {
                         </div>
                     )}
 
-                    <button 
+                    <button
                         onClick={handlePayment}
                         disabled={processing}
                         className="w-full bg-brand-gold hover:bg-yellow-400 text-black font-bold py-4 rounded-xl shadow-glow transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -285,7 +285,7 @@ export default function PaymentPage() {
                             </>
                         )}
                     </button>
-                    
+
                     <p className="text-xs text-center text-slate-500">
                         By proceeding, you agree to our Terms of Service.
                     </p>

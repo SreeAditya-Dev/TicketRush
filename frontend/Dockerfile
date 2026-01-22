@@ -7,14 +7,16 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install ALL dependencies including devDependencies
-# Use --include=dev to explicitly ensure dev dependencies are installed for the build step
-RUN npm install --include=dev --legacy-peer-deps
+RUN npm install --include=dev --legacy-peer-deps --verbose
 
 # Copy source files
 COPY . .
 
-# Build
-RUN npm run build
+# Debug: Check if node_modules exists
+RUN ls -la node_modules/.bin || echo "node_modules/.bin not found"
+
+# Build using local binaries
+RUN ./node_modules/.bin/tsc -b && ./node_modules/.bin/vite build
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine

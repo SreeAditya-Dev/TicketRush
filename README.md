@@ -22,6 +22,9 @@ You need a system that:
 
 ---
 
+### 📸 Product Diagram
+![Product Diagram](https://iili.io/f47SXgR.jpg)
+
 ## 2. The Tech Stack Role
 
 Here is how each technology is implemented to solve specific parts of this problem:
@@ -86,6 +89,9 @@ We rely on custom metrics to prove the system works:
 ---
 
 ## 4. System Architecture
+
+### 📐 System Architecture Diagram
+![System Architecture](https://iili.io/f47p4oJ.jpg)
 
 Below is the logical flow of the system handling a booking request.
 

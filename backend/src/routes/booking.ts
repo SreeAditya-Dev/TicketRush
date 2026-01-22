@@ -24,7 +24,7 @@ const parseStrategy = (value?: string): Strategy => {
   return "locked";
 };
 
-const bookSeatNaive = async (seatCode: string, userId: string, date: string, time: string): Promise<BookingResult> => {
+const bookSeatNaive = async (seatCode: string, userId: string, eventId: string, date: string, time: string): Promise<BookingResult> => {
   const stopTimer = startDbTimer();
   try {
     const seat = await prisma.seat.findUnique({ where: { code: seatCode } });
@@ -35,6 +35,7 @@ const bookSeatNaive = async (seatCode: string, userId: string, date: string, tim
     const existingBooking = await prisma.booking.findFirst({
         where: {
             seatId: seat.id,
+            eventId,
             date,
             time
         }
@@ -45,7 +46,7 @@ const bookSeatNaive = async (seatCode: string, userId: string, date: string, tim
     }
 
     const booking = await prisma.booking.create({ 
-        data: { userId, seatId: seat.id, date, time } 
+        data: { userId, seatId: seat.id, eventId, date, time } 
     });
 
     return { ok: true, booking };
@@ -59,6 +60,7 @@ const bookSeatNaive = async (seatCode: string, userId: string, date: string, tim
 const bookSeatWithLock = async (
   seatCode: string,
   userId: string,
+  eventId: string,
   date: string,
   time: string
 ): Promise<BookingResult> => {
@@ -74,6 +76,7 @@ const bookSeatWithLock = async (
         const existingBooking = await tx.booking.findFirst({
             where: {
                 seatId: seat.id,
+                eventId,
                 date,
                 time
             }
@@ -84,7 +87,7 @@ const bookSeatWithLock = async (
         }
 
         const booking = await tx.booking.create({ 
-            data: { userId, seatId: seat.id, date, time } 
+            data: { userId, seatId: seat.id, eventId, date, time } 
         });
 
         return { ok: true, booking } as const;
@@ -101,14 +104,15 @@ const bookSeatWithLock = async (
 };
 
 bookingRouter.get("/seats", async (req, res) => {
+  const eventId = typeof req.query.eventId === 'string' ? req.query.eventId : '';
   const date = typeof req.query.date === 'string' ? req.query.date : '';
   const time = typeof req.query.time === 'string' ? req.query.time : '';
 
   const seats = await prisma.seat.findMany({ orderBy: { id: "asc" } });
   
-  if (date && time) {
+  if (eventId && date && time) {
       const bookings = await prisma.booking.findMany({
-          where: { date, time }
+          where: { eventId, date, time }
       });
       const bookedSeatIds = new Set(bookings.map(b => b.seatId));
       
@@ -120,7 +124,7 @@ bookingRouter.get("/seats", async (req, res) => {
       return res.json({ seats: seatsWithStatus });
   }
 
-  // Default fallback if no date provided (show all open)
+  // Default fallback if no eventId provided (show all open)
   const seatsWithStatus = seats.map(s => ({ ...s, isBooked: false, bookedAt: null }));
   res.json({ seats: seatsWithStatus });
 });
@@ -128,18 +132,19 @@ bookingRouter.get("/seats", async (req, res) => {
 bookingRouter.post("/book-seat", async (req, res) => {
   const seatCode = typeof req.body?.seatCode === "string" ? req.body.seatCode : "";
   const userId = typeof req.body?.userId === "string" ? req.body.userId : "";
+  const eventId = typeof req.body?.eventId === "string" ? req.body.eventId : "";
   const date = typeof req.body?.date === "string" ? req.body.date : "";
   const time = typeof req.body?.time === "string" ? req.body.time : "";
   const strategy = parseStrategy(req.body?.strategy);
 
-  if (!seatCode || !userId || !date || !time) {
-    return res.status(400).json({ message: "seatCode, userId, date, and time are required" });
+  if (!seatCode || !userId || !eventId || !date || !time) {
+    return res.status(400).json({ message: "seatCode, userId, eventId, date, and time are required" });
   }
 
   bookingAttempts.inc();
 
-  // Lock key now includes date and time to allow concurrent bookings for different slots
-  const lockKey = `${config.seatLockPrefix}${seatCode}:${date}:${time}`;
+  // Lock key now includes eventId, date and time to allow concurrent bookings for different events/slots
+  const lockKey = `${config.seatLockPrefix}${seatCode}:${eventId}:${date}:${time}`;
   let hasLock = false;
 
   try {
@@ -155,8 +160,8 @@ bookingRouter.post("/book-seat", async (req, res) => {
 
     const result =
       strategy === "locked"
-        ? await bookSeatWithLock(seatCode, userId, date, time)
-        : await bookSeatNaive(seatCode, userId, date, time);
+        ? await bookSeatWithLock(seatCode, userId, eventId, date, time)
+        : await bookSeatNaive(seatCode, userId, eventId, date, time);
 
     if (!result.ok) {
       if (result.status === 409) {

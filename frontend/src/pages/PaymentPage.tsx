@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { bookSeat } from "../api";
 import { ArrowLeft, CreditCard, Smartphone, Check, Download, Share2, Ticket } from "lucide-react";
@@ -12,17 +12,46 @@ export default function PaymentPage() {
     const location = useLocation();
 
     // State from BookingPage
-    const { selectedSeats, totalAmount, date, time } = location.state || {
-        selectedSeats: [], totalAmount: 0, date: "N/A", time: "N/A"
+    const { 
+        selectedSeats, 
+        totalAmount, 
+        date, 
+        time,
+        eventId,
+        eventTitle,
+        eventArtist,
+        eventVenue,
+        eventImage
+    } = location.state || {
+        selectedSeats: [], 
+        totalAmount: 0, 
+        date: "N/A", 
+        time: "N/A",
+        eventId: id,
+        eventTitle: "Event",
+        eventArtist: "Artist",
+        eventVenue: "Venue",
+        eventImage: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=1000&auto=format&fit=crop"
     };
 
     const [paymentMethod, setPaymentMethod] = useState<"card" | "gpay">("gpay");
     const [userId, setUserId] = useState("user-123"); // Mock user
     const [processing, setProcessing] = useState(false);
     const [success, setSuccess] = useState(false);
-    const [customQrUrl, setCustomQrUrl] = useState("");
+    const [qrScanned, setQrScanned] = useState(false);
 
     const ticketRef = useRef<HTMLDivElement>(null);
+
+    // Generate UPI payment string for QR
+    const upiAmount = totalAmount + 45;
+    const upiPaymentString = `upi://pay?pa=ticketrush@upi&pn=TicketRush&am=${upiAmount}&cu=INR&tn=Ticket for ${eventTitle}`;
+
+    // Auto-complete payment when QR is scanned (simulated via visibility API or user action)
+    useEffect(() => {
+        if (qrScanned && paymentMethod === "gpay" && !processing && !success) {
+            handlePayment();
+        }
+    }, [qrScanned]);
 
     const handlePayment = async () => {
         setProcessing(true);
@@ -30,9 +59,9 @@ export default function PaymentPage() {
             // Simulate Payment Delay
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Book each seat
+            // Book each seat with eventId
             const promises = selectedSeats.map((code: string) =>
-                bookSeat(code, userId, "locked", date, time)
+                bookSeat(code, userId, "locked", eventId || id || "", date, time)
             );
 
             await Promise.all(promises);
@@ -43,6 +72,11 @@ export default function PaymentPage() {
         } finally {
             setProcessing(false);
         }
+    };
+
+    // Handler for QR scan simulation (on mobile, user taps "I've Paid")
+    const handleQrScanned = () => {
+        setQrScanned(true);
     };
 
     const downloadTicket = async () => {
@@ -86,15 +120,15 @@ export default function PaymentPage() {
                     {/* Top Section */}
                     <div className="relative h-48">
                         <img
-                            src="https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=1000&auto=format&fit=crop"
+                            src={eventImage}
                             className="w-full h-full object-cover"
                             alt="Concert"
                             crossOrigin="anonymous" // Added CORS header
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-theatre-900 to-transparent" />
                         <div className="absolute bottom-4 left-6">
-                            <h2 className="text-2xl font-bold text-white">The Eras Tour</h2>
-                            <p className="text-brand-gold font-medium">Taylor Swift</p>
+                            <h2 className="text-2xl font-bold text-white">{eventTitle}</h2>
+                            <p className="text-brand-gold font-medium">{eventArtist}</p>
                         </div>
                     </div>
 
@@ -118,7 +152,7 @@ export default function PaymentPage() {
                             </div>
                             <div>
                                 <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Venue</div>
-                                <div className="font-semibold text-slate-200">Wembley Stadium</div>
+                                <div className="font-semibold text-slate-200">{eventVenue}</div>
                             </div>
                             <div>
                                 <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Seats</div>
@@ -128,7 +162,7 @@ export default function PaymentPage() {
 
                         <div className="flex justify-center mb-6">
                             <div className="bg-white p-2 rounded-lg">
-                                <QRCodeSVG value={`TICKET-${id}-${selectedSeats.join('-')}`} size={100} />
+                                <QRCodeSVG value={`TICKET-${eventId || id}-${selectedSeats.join('-')}-${date}-${time}`} size={100} />
                             </div>
                         </div>
 
@@ -170,17 +204,17 @@ export default function PaymentPage() {
                     <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 shadow-xl">
                         <div className="flex gap-4 mb-6 pb-6 border-b border-theatre-700">
                             <img
-                                src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=200&auto=format&fit=crop"
+                                src={eventImage}
                                 className="w-24 h-24 rounded-lg object-cover"
                                 alt="Show"
                             />
                             <div>
-                                <h3 className="font-bold text-xl text-white">The Eras Tour</h3>
-                                <div className="text-brand-gold text-sm mb-1">Taylor Swift</div>
+                                <h3 className="font-bold text-xl text-white">{eventTitle}</h3>
+                                <div className="text-brand-gold text-sm mb-1">{eventArtist}</div>
                                 <div className="text-slate-400 text-sm flex items-center gap-2">
                                     {date} • {time}
                                 </div>
-                                <div className="text-slate-400 text-sm">Wembley Stadium</div>
+                                <div className="text-slate-400 text-sm">{eventVenue}</div>
                             </div>
                         </div>
 
@@ -201,7 +235,7 @@ export default function PaymentPage() {
 
                         <div className="flex justify-between items-center pt-4 border-t border-theatre-700">
                             <span className="font-bold text-white">Total Amount</span>
-                            <span className="font-bold text-2xl text-brand-gold">₹{totalAmount + 45}</span>
+                            <span className="font-bold text-2xl text-brand-gold">₹{upiAmount}</span>
                         </div>
                     </div>
                 </div>
@@ -235,26 +269,29 @@ export default function PaymentPage() {
 
                     {paymentMethod === "gpay" && (
                         <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 text-center animate-in fade-in zoom-in duration-300">
-                            <div className="mb-4">
-                                <label className="block text-sm text-slate-400 mb-2 text-left">Your UPI QR Code URL (Optional)</label>
-                                <input
-                                    type="text"
-                                    placeholder="Paste image URL of your QR..."
-                                    value={customQrUrl}
-                                    onChange={(e) => setCustomQrUrl(e.target.value)}
-                                    className="w-full bg-theatre-900 border border-theatre-600 rounded-lg px-4 py-2 text-white text-sm focus:border-brand-purple focus:outline-none mb-4"
-                                />
-                            </div>
-
                             <div className="bg-white p-4 rounded-xl inline-block mb-4">
-                                <img
-                                    src={customQrUrl || "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"}
-                                    alt="Payment QR"
-                                    className="w-48 h-48 object-contain"
-                                />
+                                <QRCodeSVG value={upiPaymentString} size={192} />
                             </div>
-                            <p className="text-sm text-slate-400">Scan this code with your GPay app to pay</p>
-                            <div className="mt-4 text-brand-gold font-bold text-xl">₹{totalAmount + 45}</div>
+                            <p className="text-sm text-slate-400 mb-2">Scan this QR code with any UPI app to pay</p>
+                            <div className="mt-4 text-brand-gold font-bold text-xl mb-4">₹{upiAmount}</div>
+                            
+                            {/* Confirm payment button for mobile users */}
+                            <button
+                                onClick={handleQrScanned}
+                                disabled={processing || qrScanned}
+                                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {qrScanned ? (
+                                    <>
+                                        <Check className="w-5 h-5" /> Payment Confirmed
+                                    </>
+                                ) : (
+                                    <>
+                                        <Smartphone className="w-5 h-5" /> I've Completed Payment
+                                    </>
+                                )}
+                            </button>
+                            <p className="text-xs text-slate-500 mt-2">After scanning and paying, tap the button above</p>
                         </div>
                     )}
 
@@ -271,7 +308,7 @@ export default function PaymentPage() {
 
                     <button
                         onClick={handlePayment}
-                        disabled={processing}
+                        disabled={processing || (paymentMethod === "gpay" && !qrScanned)}
                         className="w-full bg-brand-gold hover:bg-yellow-400 text-black font-bold py-4 rounded-xl shadow-glow transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {processing ? (
@@ -281,7 +318,7 @@ export default function PaymentPage() {
                             </>
                         ) : (
                             <>
-                                Pay ₹{totalAmount + 45}
+                                Pay ₹{upiAmount}
                             </>
                         )}
                     </button>

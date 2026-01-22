@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getSeats } from "../api";
 import { Seat } from "../types";
 import { ChevronLeft, Calendar, Clock, Info } from "lucide-react";
+import { getEventById } from "../data/events";
 
 export default function BookingPage() {
     const { id } = useParams();
@@ -10,6 +11,9 @@ export default function BookingPage() {
     const [seats, setSeats] = useState<Seat[]>([]);
     const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Get event data
+    const event = id ? getEventById(id) : undefined;
 
     // Mock Date/Time
     const DATES = ["Fri, 06 Jun", "Sat, 07 Jun", "Sun, 08 Jun"];
@@ -19,14 +23,14 @@ export default function BookingPage() {
 
     const fetchSeats = useCallback(async (isInitial = false) => {
         try {
-            const data = await getSeats(selectedDate, selectedTime);
+            const data = await getSeats(id, selectedDate, selectedTime);
             setSeats(data);
         } catch {
             console.error("Failed to load seats");
         } finally {
             if (isInitial) setLoading(false);
         }
-    }, [selectedDate, selectedTime]);
+    }, [id, selectedDate, selectedTime]);
 
     useEffect(() => {
         // Initial fetch
@@ -70,13 +74,18 @@ export default function BookingPage() {
     };
 
     const handleProceed = () => {
-        if (selectedSeats.length === 0) return;
+        if (selectedSeats.length === 0 || !event) return;
         navigate(`/payment/${id}`, {
             state: {
                 selectedSeats,
                 totalAmount: calculateTotal(),
                 date: selectedDate,
-                time: selectedTime
+                time: selectedTime,
+                eventId: id,
+                eventTitle: event.title,
+                eventArtist: event.artist,
+                eventVenue: event.venue,
+                eventImage: event.image
             }
         });
     };
@@ -148,9 +157,9 @@ export default function BookingPage() {
                         <ChevronLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-base font-bold text-white tracking-tight">The Eras Tour</h1>
+                        <h1 className="text-base font-bold text-white tracking-tight">{event?.title || "Event"}</h1>
                         <p className="text-xs text-brand-gold flex items-center gap-1">
-                            Wembley Stadium
+                            {event?.venue || "Venue"}
                         </p>
                     </div>
                 </div>
@@ -269,49 +278,6 @@ export default function BookingPage() {
                             </div>
 
                         )}
-
-                        
-
-                                    {/* DEBUG SECTION */}
-
-                        
-
-                                    <div className="fixed bottom-20 left-4 text-xs font-mono text-red-400 bg-black/80 p-2 z-50 border border-red-900 rounded pointer-events-none">
-
-                        
-
-                                        Seats: {seats.length}<br/>
-
-                        
-
-                                        Loading: {String(loading)}<br/>
-
-                        
-
-                                        Sample Code: {seats[0]?.code}<br/>
-
-                        
-
-                                        Calc Row: {seats.length > 0 ? getRow(seats[0]) : 'N/A'}
-
-                        
-
-                                    </div>
-
-                        
-
-                                </div>
-
-                        
-
-                            );
-
-                        
-
-                        }
-
-                        
-
-                        
-
-            
+        </div>
+    );
+}

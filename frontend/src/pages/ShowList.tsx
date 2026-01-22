@@ -1,58 +1,7 @@
 import { Link } from "react-router-dom";
 import { Calendar, MapPin, Clock, Music, Star, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useRef } from "react";
-
-const SHOWS = [
-    {
-        id: "eras-tour",
-        title: "The Eras Tour",
-        artist: "Taylor Swift",
-        date: "Fri, 06 Jun",
-        time: "07:00 PM",
-        venue: "Wembley Stadium",
-        image: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=1000&auto=format&fit=crop",
-        price: "From ₹350",
-        tags: ["Pop", "Global Phenomenon"],
-        rating: 4.9
-    },
-    {
-        id: "coldplay-spheres",
-        title: "Music of the Spheres",
-        artist: "Coldplay",
-        date: "Sat, 07 Jun",
-        time: "08:00 PM",
-        venue: "O2 Arena",
-        image: "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=1000&auto=format&fit=crop",
-        price: "From ₹400",
-        tags: ["Alternative", "Visual Spectacle"],
-        rating: 4.8
-    },
-    {
-        id: "weeknd-after-hours",
-        title: "After Hours Til Dawn",
-        artist: "The Weeknd",
-        date: "Sun, 08 Jun",
-        time: "09:00 PM",
-        venue: "SoFi Stadium",
-        // Replaced with a reliable color-block placeholder if external images fail often, or a reliable Unsplash ID
-        image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1000&auto=format&fit=crop",
-        price: "From ₹310",
-        tags: ["R&B", "Synth-Pop"],
-        rating: 4.7
-    },
-    {
-        id: "ed-sheeran-math",
-        title: "+–=÷x Tour",
-        artist: "Ed Sheeran",
-        date: "Mon, 09 Jun",
-        time: "07:30 PM",
-        venue: "MSG",
-        image: "https://images.unsplash.com/photo-1501612780327-45045538702b?q=80&w=1000&auto=format&fit=crop",
-        price: "From ₹250",
-        tags: ["Acoustic", "Pop"],
-        rating: 4.6
-    }
-];
+import { EVENTS } from "../data/events";
 
 export default function ShowList() {
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -123,7 +72,7 @@ export default function ShowList() {
                     className="flex gap-6 overflow-x-auto pb-8 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                    {SHOWS.map((show, index) => (
+                    {EVENTS.map((show, index) => (
                         <div
                             key={show.id}
                             className="flex-shrink-0 w-[300px] md:w-[350px] snap-center group relative bg-theatre-800 rounded-3xl overflow-hidden border border-theatre-700 hover:border-brand-purple/50 transition-all duration-500 hover:shadow-2xl hover:shadow-brand-purple/20 hover:-translate-y-2"

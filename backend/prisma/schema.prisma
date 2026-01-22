@@ -22,10 +22,11 @@ model Booking {
   id        Int      @id @default(autoincrement())
   userId    String
   seatId    Int
+  eventId   String
   date      String
   time      String
   createdAt DateTime @default(now())
   seat      Seat     @relation(fields: [seatId], references: [id])
 
-  @@unique([seatId, date, time])
+  @@unique([seatId, eventId, date, time])
 }

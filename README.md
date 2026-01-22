@@ -1,5 +1,9 @@
 # 🎫 TicketRush – High-Volume Event Booking System
 
+<p align="center">
+  <img src="https://iili.io/f4YLnuj.jpg" alt="TicketRush Logo"  />
+</p>
+
 ## 1. The Real-World Problem
 
 **Imagine a popular concert (like Taylor Swift) or a limited sneaker drop.**

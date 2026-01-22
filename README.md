@@ -51,7 +51,7 @@ Here is how each technology is implemented to solve specific parts of this probl
 
 ---
 
-## 3. Implementation Roadmap
+## 3. Development Lifecycle
 
 ### 🏗️ Phase 1: The Setup (Docker)
 We use `docker-compose.yml` to spin up the entire infrastructure:

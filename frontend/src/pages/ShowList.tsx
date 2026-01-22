@@ -20,7 +20,7 @@ const SHOWS = [
         date: "April 20, 2024",
         time: "9:00 PM",
         venue: "SoFi Stadium",
-        image: "https://images.unsplash.com/photo-1459749411177-d4a414c9ff0f?q=80&w=1000&auto=format&fit=crop",
+        image: "https://placehold.co/600x400/1e293b/FFFFFF/png?text=The+Weeknd",
         price: "From $120",
         tags: ["R&B", "Synth-Pop"]
     },
@@ -44,7 +44,7 @@ export default function ShowList() {
             <div className="relative h-[50vh] min-h-[400px] w-full overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent z-10" />
                 <img
-                    src="https://images.unsplash.com/photo-1470229722913-7ea0510d9f38?q=80&w=2670&auto=format&fit=crop"
+                    src="https://placehold.co/1200x600/0f172a/FFFFFF/png?text=Live+The+Moment"
                     alt="Concert Hero"
                     className="w-full h-full object-cover opacity-60"
                 />

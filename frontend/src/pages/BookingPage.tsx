@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getSeats } from "../api";
 import { Seat } from "../types";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Calendar, Clock, Info } from "lucide-react";
 
 export default function BookingPage() {
     const { id } = useParams();
@@ -47,12 +47,22 @@ export default function BookingPage() {
         return 310; // Classic
     };
 
+    const getRow = (seat: Seat) => {
+        // Try extracting number from code (e.g. "S005" -> 5)
+        const match = seat.code.match(/(\d+)/);
+        if (match) {
+            const num = parseInt(match[1], 10);
+            return Math.ceil(num / 10);
+        }
+        // Fallback to ID
+        return Math.ceil(seat.id / 10);
+    };
+
     const calculateTotal = () => {
         return selectedSeats.reduce((total, code) => {
-            // Find seat to get its row/index (assuming mock logic for row)
             const seat = seats.find(s => s.code === code);
             if (!seat) return total;
-            const row = Math.ceil(seat.id / 10);
+            const row = getRow(seat);
             return total + getPrice(row);
         }, 0);
     };
@@ -69,145 +79,237 @@ export default function BookingPage() {
         });
     };
 
-    // Group seats by category
-    const renderGrid = (startRow: number, endRow: number) => {
+    const renderGrid = (title: string, price: number, startRow: number, endRow: number) => {
         const gridSeats = seats.filter(s => {
-            const row = Math.ceil(s.id / 10);
+            const row = getRow(s);
             return row >= startRow && row <= endRow;
         });
 
-        if (loading && seats.length === 0) return <div className="h-32 flex items-center justify-center animate-pulse text-slate-500">Loading...</div>;
+        if (loading && seats.length === 0) return (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <div className="w-8 h-8 border-4 border-brand-purple border-t-transparent rounded-full animate-spin"></div>
+                <div className="text-slate-500 text-sm">Loading seat map...</div>
+            </div>
+        );
 
         return (
-            <div className="grid grid-cols-10 gap-3 max-w-3xl mx-auto my-4">
-                {gridSeats.map((seat) => {
-                    const isSelected = selectedSeats.includes(seat.code);
-                    const isBooked = seat.isBooked;
+            <div className="mb-8 relative">
+                <div className="flex items-center gap-3 mb-4 px-4">
+                    <span className="text-xs font-bold text-brand-gold bg-brand-gold/10 px-2 py-1 rounded tracking-wider uppercase">
+                        {title}
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">₹{price}</span>
+                    <div className="h-px bg-theatre-700 flex-grow"></div>
+                </div>
+                
+                <div className="grid grid-cols-10 gap-y-3 gap-x-2 max-w-lg mx-auto px-4">
+                    {gridSeats.map((seat) => {
+                        const isSelected = selectedSeats.includes(seat.code);
+                        const isBooked = seat.isBooked;
 
-                    return (
-                        <button
-                            key={seat.id}
-                            disabled={isBooked}
-                            onClick={() => toggleSeat(seat.code)}
-                            className={`
-                h-9 w-9 rounded text-xs font-semibold border flex items-center justify-center transition-all
-                ${isBooked
-                                    ? "bg-slate-200 border-slate-300 text-slate-400 cursor-not-allowed"
-                                    : isSelected
-                                        ? "bg-green-500 border-green-600 text-white shadow-md active:scale-95"
-                                        : "bg-white border-green-500 text-green-600 hover:bg-green-50"
-                                }
-              `}
-                        >
-                            {seat.code.replace("S", "").replace(/^0+/, "")}
-                        </button>
-                    );
-                })}
+                        return (
+                            <button
+                                key={seat.id}
+                                disabled={isBooked}
+                                onClick={() => toggleSeat(seat.code)}
+                                className={`
+                                    relative group w-full pt-[80%] rounded-t-lg transition-all duration-300
+                                    flex items-center justify-center
+                                    ${isBooked 
+                                        ? "bg-theatre-700/50 cursor-not-allowed opacity-40" 
+                                        : isSelected 
+                                            ? "bg-brand-gold shadow-glow scale-105 z-10" 
+                                            : "bg-theatre-700 hover:bg-brand-purple/50 hover:shadow-glow-purple border border-theatre-600 hover:border-brand-purple"
+                                    }
+                                `}
+                            >
+                                {/* Seat Armrests Effect */}
+                                <div className={`absolute bottom-1 left-0.5 right-0.5 h-1 rounded-full ${isSelected ? 'bg-black/20' : 'bg-black/40'}`}></div>
+                                
+                                <span className={`text-[9px] font-bold ${isSelected ? "text-black" : "text-slate-400 group-hover:text-white"}`}>
+                                    {seat.code.replace("S", "").replace(/^0+/, "")}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
         );
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-24 text-slate-900 font-sans">
+        <div className="min-h-screen bg-theatre-900 pb-32 text-slate-200 font-sans selection:bg-brand-purple selection:text-white">
             {/* Top Bar */}
-            <header className="bg-white px-4 py-3 shadow-sm sticky top-0 z-20 flex items-center gap-4">
-                <button onClick={() => navigate(-1)} className="p-1 hover:bg-slate-100 rounded-full">
-                    <ChevronLeft className="w-6 h-6 text-slate-600" />
-                </button>
-                <div>
-                    <h1 className="text-lg font-bold text-slate-800">The Eras Tour</h1>
-                    <p className="text-xs text-slate-500">Wembley Stadium</p>
-                </div>
-                <div className="ml-auto flex items-center gap-1 text-rose-500 font-medium text-sm border border-rose-200 bg-rose-50 px-3 py-1 rounded-full">
-                    <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
-                    Selling Fast
+            <header className="bg-theatre-800/80 backdrop-blur-xl border-b border-theatre-700 px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => navigate(-1)} className="p-2 hover:bg-theatre-700 rounded-full transition-colors text-slate-300 hover:text-white">
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div>
+                        <h1 className="text-base font-bold text-white tracking-tight">The Eras Tour</h1>
+                        <p className="text-xs text-brand-gold flex items-center gap-1">
+                            Wembley Stadium
+                        </p>
+                    </div>
                 </div>
             </header>
 
             {/* Date & Time Selector */}
-            <div className="bg-white pt-2 pb-4 px-4 border-b border-slate-200">
-                <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar mb-4">
+            <div className="bg-theatre-800 border-b border-theatre-700 pt-4 pb-2">
+                <div className="flex gap-3 overflow-x-auto px-4 pb-4 no-scrollbar">
                     {DATES.map((date) => (
                         <button
                             key={date}
                             onClick={() => setSelectedDate(date)}
-                            className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedDate === date
-                                    ? "bg-rose-500 text-white shadow-md"
-                                    : "bg-white text-slate-600 border border-slate-200"
-                                }`}
+                            className={`
+                                flex-shrink-0 px-4 py-3 rounded-xl flex flex-col items-center gap-1 transition-all border
+                                ${selectedDate === date
+                                    ? "bg-brand-purple border-brand-purple text-white shadow-glow-purple"
+                                    : "bg-theatre-700 border-theatre-600 text-slate-400 hover:bg-theatre-600 hover:border-theatre-500"
+                                }
+                            `}
                         >
-                            {date}
+                            <Calendar className="w-3.5 h-3.5 opacity-70" />
+                            <span className="text-xs font-semibold whitespace-nowrap">{date}</span>
                         </button>
                     ))}
                 </div>
-                <div className="flex gap-3 overflow-x-auto no-scrollbar">
+                <div className="flex gap-2 overflow-x-auto px-4 pb-3 no-scrollbar border-t border-theatre-700/50 pt-3">
                     {TIMES.map((time) => (
                         <button
                             key={time}
                             onClick={() => setSelectedTime(time)}
-                            className={`flex-shrink-0 px-4 py-2 rounded border text-xs font-semibold whitespace-nowrap ${selectedTime === time
-                                    ? "border-green-500 bg-green-50 text-green-700"
-                                    : "border-slate-300 text-slate-500"
-                                }`}
+                            className={`
+                                flex-shrink-0 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all flex items-center gap-1.5
+                                ${selectedTime === time
+                                    ? "bg-brand-gold text-black border-brand-gold font-bold shadow-glow"
+                                    : "border-theatre-600 text-slate-400 hover:border-theatre-500 hover:text-slate-200"
+                                }
+                            `}
                         >
+                            <Clock className="w-3 h-3" />
                             {time}
-                            <div className="text-[10px] font-normal opacity-70 mt-0.5 uppercase tracking-wide">Audio 3D</div>
                         </button>
                     ))}
                 </div>
             </div>
 
-            <div className="px-4 py-6 space-y-8">
-                {/* Categories */}
-                <section>
-                    <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider pl-2">Rs. 570 RECLINER</div>
-                    {renderGrid(1, 2)}
-                </section>
+            <div className="max-w-3xl mx-auto">
+                {/* Theatre Screen */}
+                <div className="relative pt-10 pb-6 overflow-hidden">
+                    <div className="w-3/4 h-8 mx-auto bg-gradient-to-b from-white/10 to-transparent rounded-[50%] blur-xl opacity-30 transform -translate-y-4"></div>
+                    <div className="w-2/3 h-1.5 mx-auto bg-slate-500 rounded-full shadow-screen mb-8"></div>
+                    <div className="text-center text-[10px] text-slate-500 uppercase tracking-[0.2em] font-medium">Screen This Way</div>
+                </div>
 
-                <section>
-                    <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider pl-2">Rs. 350 PRIME</div>
-                    {renderGrid(3, 6)}
-                </section>
-
-                <section>
-                    <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider pl-2">Rs. 310 CLASSIC</div>
-                    {renderGrid(7, 10)}
-                </section>
+                {/* Seat Layout */}
+                <div className="px-2">
+                    {renderGrid("Recliner", 570, 1, 2)}
+                    {renderGrid("Prime", 350, 3, 6)}
+                    {renderGrid("Classic", 310, 7, 10)}
+                </div>
 
                 {/* Legend */}
-                <div className="flex justify-center gap-6 mt-8 py-4 bg-white/50 rounded-xl">
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <div className="w-4 h-4 rounded border border-green-500 bg-white" />
-                        Available
+                <div className="flex justify-center gap-6 mt-8 py-4 border-t border-theatre-700/50 mx-6">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-5 h-5 rounded-t-md bg-theatre-700 border border-theatre-600"></div>
+                        <span className="text-[10px] text-slate-500">Available</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <div className="w-4 h-4 rounded bg-green-500 border border-green-600" />
-                        Selected
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-5 h-5 rounded-t-md bg-brand-gold shadow-glow"></div>
+                        <span className="text-[10px] text-slate-500">Selected</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <div className="w-4 h-4 rounded bg-slate-200 border border-slate-300" />
-                        Sold
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-5 h-5 rounded-t-md bg-theatre-700/50 opacity-50"></div>
+                        <span className="text-[10px] text-slate-500">Sold</span>
                     </div>
                 </div>
             </div>
 
-            {/* Sticky Footer */}
-            {selectedSeats.length > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 animate-in slide-in-from-bottom-full duration-300">
-                    <div className="max-w-7xl mx-auto flex items-center justify-between">
-                        <div className="text-center">
-                            <div className="text-rose-500 font-bold text-xl">₹{calculateTotal()}</div>
-                            <div className="text-xs text-slate-500">{selectedSeats.length} Tickets</div>
-                        </div>
-                        <button
-                            onClick={handleProceed}
-                            className="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-12 rounded-lg shadow-lg shadow-rose-500/30 transition-all hover:scale-105 active:scale-95"
-                        >
-                            Pay ₹{calculateTotal()}
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
+                        {/* Sticky Footer */}
+
+                        {selectedSeats.length > 0 && (
+
+                            <div className="fixed bottom-4 left-4 right-4 max-w-3xl mx-auto z-40">
+
+                                <div className="bg-theatre-800/90 backdrop-blur-lg border border-theatre-600 rounded-2xl p-4 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-10 fade-in duration-300">
+
+                                    <div>
+
+                                        <div className="text-xs text-slate-400 mb-0.5">Total Amount</div>
+
+                                        <div className="text-xl font-bold text-white flex items-baseline gap-1">
+
+                                            <span className="text-sm text-brand-gold">₹</span>
+
+                                            {calculateTotal()}
+
+                                        </div>
+
+                                        <div className="text-[10px] text-slate-500 font-medium">{selectedSeats.length} Tickets Selected</div>
+
+                                    </div>
+
+                                    <button
+
+                                        onClick={handleProceed}
+
+                                        className="bg-brand-purple hover:bg-violet-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-brand-purple/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+
+                                    >
+
+                                        Proceed <ChevronLeft className="w-4 h-4 rotate-180" />
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        )}
+
+                        
+
+                                    {/* DEBUG SECTION */}
+
+                        
+
+                                    <div className="fixed bottom-20 left-4 text-xs font-mono text-red-400 bg-black/80 p-2 z-50 border border-red-900 rounded pointer-events-none">
+
+                        
+
+                                        Seats: {seats.length}<br/>
+
+                        
+
+                                        Loading: {String(loading)}<br/>
+
+                        
+
+                                        Sample Code: {seats[0]?.code}<br/>
+
+                        
+
+                                        Calc Row: {seats.length > 0 ? getRow(seats[0]) : 'N/A'}
+
+                        
+
+                                    </div>
+
+                        
+
+                                </div>
+
+                        
+
+                            );
+
+                        
+
+                        }
+
+                        
+
+                        
+
+            

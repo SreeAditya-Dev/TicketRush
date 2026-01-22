@@ -1,32 +1,29 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "react-router-dom";
-import { getSeats, bookSeat, BookSeatResult } from "../api";
-import { Seat, BookingStrategy } from "../types";
-import { Lock, AlertTriangle, Armchair } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { getSeats } from "../api";
+import { Seat } from "../types";
+import { ChevronLeft } from "lucide-react";
 
 export default function BookingPage() {
-    const { id } = useParams(); // In a real app, use this to fetch specific show data
+    const { id } = useParams();
+    const navigate = useNavigate();
     const [seats, setSeats] = useState<Seat[]>([]);
+    const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
-    const [processing, setProcessing] = useState<string | null>(null);
-    const [strategy, setStrategy] = useState<BookingStrategy>("locked");
-    const [toasts, setToasts] = useState<{ id: number; msg: string; ok: boolean }[]>([]);
-    const [userId] = useState(() => `user-${Math.random().toString(36).slice(2, 9)}`);
 
-    const showToast = (msg: string, ok: boolean) => {
-        const id = Date.now();
-        setToasts((prev) => [...prev, { id, msg, ok }]);
-        setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
-    };
+    // Mock Date/Time
+    const DATES = ["Fri, 06 Jun", "Sat, 07 Jun", "Sun, 08 Jun"];
+    const TIMES = ["01:00 PM", "03:30 PM", "04:30 PM", "07:00 PM"];
+    const [selectedDate, setSelectedDate] = useState(DATES[0]);
+    const [selectedTime, setSelectedTime] = useState(TIMES[2]);
 
     const fetchSeats = useCallback(async () => {
-        // Only show loading on initial load
         if (seats.length === 0) setLoading(true);
         try {
             const data = await getSeats();
             setSeats(data);
         } catch {
-            showToast("Failed to load seats", false);
+            console.error("Failed to load seats");
         } finally {
             setLoading(false);
         }
@@ -34,152 +31,183 @@ export default function BookingPage() {
 
     useEffect(() => {
         fetchSeats();
-        const interval = setInterval(fetchSeats, 2000); // Polling every 2s for live feel
+        const interval = setInterval(fetchSeats, 2000);
         return () => clearInterval(interval);
     }, [fetchSeats]);
 
-    const handleBook = async (code: string) => {
-        setProcessing(code);
-        const result: BookSeatResult = await bookSeat(code, userId, strategy);
-        showToast(result.message, result.ok);
-        await fetchSeats();
-        setProcessing(null);
+    const toggleSeat = (code: string) => {
+        setSelectedSeats((prev) =>
+            prev.includes(code) ? prev.filter((s) => s !== code) : [...prev, code]
+        );
     };
 
-    const bookedCount = seats.filter((s) => s.isBooked).length;
-    const availableCount = seats.length - bookedCount;
+    const getPrice = (row: number) => {
+        if (row <= 2) return 570; // Recliner
+        if (row <= 6) return 350; // Prime
+        return 310; // Classic
+    };
+
+    const calculateTotal = () => {
+        return selectedSeats.reduce((total, code) => {
+            // Find seat to get its row/index (assuming mock logic for row)
+            const seat = seats.find(s => s.code === code);
+            if (!seat) return total;
+            const row = Math.ceil(seat.id / 10);
+            return total + getPrice(row);
+        }, 0);
+    };
+
+    const handleProceed = () => {
+        if (selectedSeats.length === 0) return;
+        navigate(`/payment/${id}`, {
+            state: {
+                selectedSeats,
+                totalAmount: calculateTotal(),
+                date: selectedDate,
+                time: selectedTime
+            }
+        });
+    };
+
+    // Group seats by category
+    const renderGrid = (startRow: number, endRow: number) => {
+        const gridSeats = seats.filter(s => {
+            const row = Math.ceil(s.id / 10);
+            return row >= startRow && row <= endRow;
+        });
+
+        if (loading && seats.length === 0) return <div className="h-32 flex items-center justify-center animate-pulse text-slate-500">Loading...</div>;
+
+        return (
+            <div className="grid grid-cols-10 gap-3 max-w-3xl mx-auto my-4">
+                {gridSeats.map((seat) => {
+                    const isSelected = selectedSeats.includes(seat.code);
+                    const isBooked = seat.isBooked;
+
+                    return (
+                        <button
+                            key={seat.id}
+                            disabled={isBooked}
+                            onClick={() => toggleSeat(seat.code)}
+                            className={`
+                h-9 w-9 rounded text-xs font-semibold border flex items-center justify-center transition-all
+                ${isBooked
+                                    ? "bg-slate-200 border-slate-300 text-slate-400 cursor-not-allowed"
+                                    : isSelected
+                                        ? "bg-green-500 border-green-600 text-white shadow-md active:scale-95"
+                                        : "bg-white border-green-500 text-green-600 hover:bg-green-50"
+                                }
+              `}
+                        >
+                            {seat.code.replace("S", "").replace(/^0+/, "")}
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    };
 
     return (
-        <div className="w-full max-w-7xl mx-auto px-4 py-8">
-            {/* Event Header */}
-            <div className="mb-8 p-6 bg-slate-800/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-3xl font-bold text-white mb-2">The Eras Tour</h1>
-                        <p className="text-slate-400 flex items-center gap-2">
-                            <Armchair className="w-4 h-4" />
-                            Wembley Stadium • March 15, 2024
-                        </p>
+        <div className="min-h-screen bg-slate-50 pb-24 text-slate-900 font-sans">
+            {/* Top Bar */}
+            <header className="bg-white px-4 py-3 shadow-sm sticky top-0 z-20 flex items-center gap-4">
+                <button onClick={() => navigate(-1)} className="p-1 hover:bg-slate-100 rounded-full">
+                    <ChevronLeft className="w-6 h-6 text-slate-600" />
+                </button>
+                <div>
+                    <h1 className="text-lg font-bold text-slate-800">The Eras Tour</h1>
+                    <p className="text-xs text-slate-500">Wembley Stadium</p>
+                </div>
+                <div className="ml-auto flex items-center gap-1 text-rose-500 font-medium text-sm border border-rose-200 bg-rose-50 px-3 py-1 rounded-full">
+                    <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
+                    Selling Fast
+                </div>
+            </header>
+
+            {/* Date & Time Selector */}
+            <div className="bg-white pt-2 pb-4 px-4 border-b border-slate-200">
+                <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar mb-4">
+                    {DATES.map((date) => (
+                        <button
+                            key={date}
+                            onClick={() => setSelectedDate(date)}
+                            className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedDate === date
+                                    ? "bg-rose-500 text-white shadow-md"
+                                    : "bg-white text-slate-600 border border-slate-200"
+                                }`}
+                        >
+                            {date}
+                        </button>
+                    ))}
+                </div>
+                <div className="flex gap-3 overflow-x-auto no-scrollbar">
+                    {TIMES.map((time) => (
+                        <button
+                            key={time}
+                            onClick={() => setSelectedTime(time)}
+                            className={`flex-shrink-0 px-4 py-2 rounded border text-xs font-semibold whitespace-nowrap ${selectedTime === time
+                                    ? "border-green-500 bg-green-50 text-green-700"
+                                    : "border-slate-300 text-slate-500"
+                                }`}
+                        >
+                            {time}
+                            <div className="text-[10px] font-normal opacity-70 mt-0.5 uppercase tracking-wide">Audio 3D</div>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="px-4 py-6 space-y-8">
+                {/* Categories */}
+                <section>
+                    <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider pl-2">Rs. 570 RECLINER</div>
+                    {renderGrid(1, 2)}
+                </section>
+
+                <section>
+                    <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider pl-2">Rs. 350 PRIME</div>
+                    {renderGrid(3, 6)}
+                </section>
+
+                <section>
+                    <div className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider pl-2">Rs. 310 CLASSIC</div>
+                    {renderGrid(7, 10)}
+                </section>
+
+                {/* Legend */}
+                <div className="flex justify-center gap-6 mt-8 py-4 bg-white/50 rounded-xl">
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                        <div className="w-4 h-4 rounded border border-green-500 bg-white" />
+                        Available
                     </div>
-
-                    <div className="flex flex-col sm:flex-row gap-4 items-center bg-slate-900/50 p-3 rounded-xl border border-slate-700">
-                        <div className="flex items-center gap-2 text-sm px-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-emerald-400 font-medium">{availableCount} Available</span>
-                        </div>
-                        <div className="h-4 w-px bg-slate-700 hidden sm:block" />
-                        <div className="flex items-center gap-2 text-sm px-2">
-                            <span className="w-2 h-2 rounded-full bg-rose-500" />
-                            <span className="text-rose-400 font-medium">{bookedCount} Sold</span>
-                        </div>
-
-                        <div className="h-8 w-px bg-slate-700 hidden sm:block mx-2" />
-
-                        <div className="flex items-center gap-2">
-                            <label htmlFor="strategy" className="text-sm font-medium text-slate-300 hidden sm:block">Mode:</label>
-                            <div className="relative">
-                                <select
-                                    id="strategy"
-                                    className="appearance-none bg-indigo-600/20 border border-indigo-500/30 hover:border-indigo-500 text-indigo-300 text-sm rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer"
-                                    value={strategy}
-                                    onChange={(e) => setStrategy(e.target.value as BookingStrategy)}
-                                >
-                                    <option value="locked">Locked (Safe)</option>
-                                    <option value="naive">Naive (Unsafe)</option>
-                                </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                    {strategy === 'locked' ? (
-                                        <Lock className="w-3 h-3 text-indigo-400" />
-                                    ) : (
-                                        <AlertTriangle className="w-3 h-3 text-amber-500" />
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                        <div className="w-4 h-4 rounded bg-green-500 border border-green-600" />
+                        Selected
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                        <div className="w-4 h-4 rounded bg-slate-200 border border-slate-300" />
+                        Sold
                     </div>
                 </div>
             </div>
 
-            {/* STAGE */}
-            <div className="relative mb-12 flex justify-center">
-                <div className="w-3/4 max-w-lg h-16 bg-gradient-to-b from-indigo-600/20 to-transparent rounded-[50%] blur-xl absolute -top-4" />
-                <div className="w-2/3 max-w-md bg-slate-800 text-slate-400 text-xs font-bold tracking-[0.3em] uppercase py-3 px-12 rounded-b-3xl text-center border-b border-x border-slate-700 shadow-xl z-10">
-                    Stage & Screens
-                </div>
-            </div>
-
-            {/* SEAT GRID */}
-            {loading && seats.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-4">
-                    <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-slate-400 animate-pulse">Loading seating chart...</p>
-                </div>
-            ) : (
-                <div className="max-w-4xl mx-auto">
-                    <div className="grid grid-cols-10 gap-2 sm:gap-3 p-4 sm:p-8 bg-slate-800/20 rounded-3xl border border-slate-800 shadow-inner">
-                        {seats.map((seat) => {
-                            const isBooked = seat.isBooked;
-                            const isProcessing = processing === seat.code;
-
-                            return (
-                                <button
-                                    key={seat.id}
-                                    disabled={isBooked || isProcessing}
-                                    onClick={() => handleBook(seat.code)}
-                                    className={`
-                    group relative aspect-square rounded-lg sm:rounded-xl flex items-center justify-center
-                    transition-all duration-200 ease-out
-                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500
-                    ${isBooked
-                                            ? "bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700"
-                                            : "bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 hover:shadow-lg hover:shadow-emerald-500/20 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 text-white border border-emerald-400/20"
-                                        }
-                    ${isProcessing ? "animate-pulse from-indigo-500 to-indigo-600" : ""}
-                  `}
-                                >
-                                    <span className={`text-[10px] sm:text-xs font-bold tracking-tight ${isBooked ? "opacity-30" : "opacity-90"}`}>
-                                        {seat.code.replace("S", "")}
-                                    </span>
-
-                                    {isProcessing && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-indigo-600 rounded-lg">
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        </div>
-                                    )}
-
-                                    {/* Hover Tooltip */}
-                                    <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs py-1 px-2 rounded border border-slate-700 whitespace-nowrap pointer-events-none transition-opacity z-20">
-                                        {isBooked ? "Sold Out" : `Row ${Math.ceil(seat.id / 10)} • Seat ${seat.code}`}
-                                    </div>
-                                </button>
-                            );
-                        })}
+            {/* Sticky Footer */}
+            {selectedSeats.length > 0 && (
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 animate-in slide-in-from-bottom-full duration-300">
+                    <div className="max-w-7xl mx-auto flex items-center justify-between">
+                        <div className="text-center">
+                            <div className="text-rose-500 font-bold text-xl">₹{calculateTotal()}</div>
+                            <div className="text-xs text-slate-500">{selectedSeats.length} Tickets</div>
+                        </div>
+                        <button
+                            onClick={handleProceed}
+                            className="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-12 rounded-lg shadow-lg shadow-rose-500/30 transition-all hover:scale-105 active:scale-95"
+                        >
+                            Pay ₹{calculateTotal()}
+                        </button>
                     </div>
                 </div>
             )}
-
-            <p className="text-xs text-center mt-12 text-slate-500">
-                Session ID: <span className="font-mono text-slate-400">{userId}</span>
-            </p>
-
-            {/* Toast Container */}
-            <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50 pointer-events-none">
-                {toasts.map((t) => (
-                    <div
-                        key={t.id}
-                        className={`
-              pointer-events-auto px-5 py-3 rounded-xl shadow-2xl border backdrop-blur-md flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300
-              ${t.ok
-                                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-200"
-                                : "bg-rose-500/10 border-rose-500/20 text-rose-200"
-                            }
-            `}
-                    >
-                        <div className={`w-2 h-2 rounded-full ${t.ok ? "bg-emerald-400" : "bg-rose-400"}`} />
-                        {t.msg}
-                    </div>
-                ))}
-            </div>
         </div>
     );
 }

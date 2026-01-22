@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply font-sans antialiased bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100 min-h-screen;
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  
+  body {
+    @apply bg-slate-900 text-slate-50 antialiased;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full border-2 border-slate-900;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-600;
+  }
 }

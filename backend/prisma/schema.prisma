@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Seat {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique
+  isBooked  Boolean   @default(false)
+  bookedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  booking   Booking?
+}
+
+model Booking {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  seatId    Int      @unique
+  createdAt DateTime @default(now())
+  seat      Seat     @relation(fields: [seatId], references: [id])
+}

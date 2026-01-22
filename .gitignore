@@ -1,0 +1,10 @@
+# Ignore build output and dependencies
+dist/
+node_modules/
+.env
+package-lock.json
+yarn.lock
+.env.*
+.DS_Store
+.vscode/
+.vscode

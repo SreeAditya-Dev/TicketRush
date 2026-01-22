@@ -24,7 +24,7 @@ const parseStrategy = (value?: string): Strategy => {
   return "locked";
 };
 
-const bookSeatNaive = async (seatCode: string, userId: string): Promise<BookingResult> => {
+const bookSeatNaive = async (seatCode: string, userId: string, date: string, time: string): Promise<BookingResult> => {
   const stopTimer = startDbTimer();
   try {
     const seat = await prisma.seat.findUnique({ where: { code: seatCode } });
@@ -32,21 +32,24 @@ const bookSeatNaive = async (seatCode: string, userId: string): Promise<BookingR
       return { ok: false, status: 404, message: "Seat not found" };
     }
 
-    if (seat.isBooked) {
-      return { ok: false, status: 409, message: "Seat already booked" };
+    const existingBooking = await prisma.booking.findFirst({
+        where: {
+            seatId: seat.id,
+            date,
+            time
+        }
+    });
+
+    if (existingBooking) {
+      return { ok: false, status: 409, message: "Seat already booked for this time" };
     }
 
-    const booking = await prisma.booking.create({ data: { userId, seatId: seat.id } });
-    await prisma.seat.update({
-      where: { id: seat.id },
-      data: { isBooked: true, bookedAt: new Date() }
+    const booking = await prisma.booking.create({ 
+        data: { userId, seatId: seat.id, date, time } 
     });
 
     return { ok: true, booking };
   } catch (error: unknown) {
-    if (isPrismaError(error) && error.code === "P2002") {
-      return { ok: false, status: 409, message: "Seat already booked" };
-    }
     throw error;
   } finally {
     stopTimer();
@@ -55,7 +58,9 @@ const bookSeatNaive = async (seatCode: string, userId: string): Promise<BookingR
 
 const bookSeatWithLock = async (
   seatCode: string,
-  userId: string
+  userId: string,
+  date: string,
+  time: string
 ): Promise<BookingResult> => {
   const stopTimer = startDbTimer();
   try {
@@ -66,14 +71,20 @@ const bookSeatWithLock = async (
           return { ok: false, status: 404, message: "Seat not found" } as const;
         }
 
-        if (seat.isBooked) {
-          return { ok: false, status: 409, message: "Seat already booked" } as const;
+        const existingBooking = await tx.booking.findFirst({
+            where: {
+                seatId: seat.id,
+                date,
+                time
+            }
+        });
+
+        if (existingBooking) {
+          return { ok: false, status: 409, message: "Seat already booked for this time" } as const;
         }
 
-        const booking = await tx.booking.create({ data: { userId, seatId: seat.id } });
-        await tx.seat.update({
-          where: { id: seat.id },
-          data: { isBooked: true, bookedAt: new Date() }
+        const booking = await tx.booking.create({ 
+            data: { userId, seatId: seat.id, date, time } 
         });
 
         return { ok: true, booking } as const;
@@ -83,32 +94,52 @@ const bookSeatWithLock = async (
 
     return result as BookingResult;
   } catch (error: unknown) {
-    if (isPrismaError(error) && error.code === "P2002") {
-      return { ok: false, status: 409, message: "Seat already booked" };
-    }
     throw error;
   } finally {
     stopTimer();
   }
 };
 
-bookingRouter.get("/seats", async (_req, res) => {
+bookingRouter.get("/seats", async (req, res) => {
+  const date = typeof req.query.date === 'string' ? req.query.date : '';
+  const time = typeof req.query.time === 'string' ? req.query.time : '';
+
   const seats = await prisma.seat.findMany({ orderBy: { id: "asc" } });
-  res.json({ seats });
+  
+  if (date && time) {
+      const bookings = await prisma.booking.findMany({
+          where: { date, time }
+      });
+      const bookedSeatIds = new Set(bookings.map(b => b.seatId));
+      
+      const seatsWithStatus = seats.map(s => ({
+          ...s,
+          isBooked: bookedSeatIds.has(s.id),
+          bookedAt: null // Legacy support
+      }));
+      return res.json({ seats: seatsWithStatus });
+  }
+
+  // Default fallback if no date provided (show all open)
+  const seatsWithStatus = seats.map(s => ({ ...s, isBooked: false, bookedAt: null }));
+  res.json({ seats: seatsWithStatus });
 });
 
 bookingRouter.post("/book-seat", async (req, res) => {
   const seatCode = typeof req.body?.seatCode === "string" ? req.body.seatCode : "";
   const userId = typeof req.body?.userId === "string" ? req.body.userId : "";
+  const date = typeof req.body?.date === "string" ? req.body.date : "";
+  const time = typeof req.body?.time === "string" ? req.body.time : "";
   const strategy = parseStrategy(req.body?.strategy);
 
-  if (!seatCode || !userId) {
-    return res.status(400).json({ message: "seatCode and userId are required" });
+  if (!seatCode || !userId || !date || !time) {
+    return res.status(400).json({ message: "seatCode, userId, date, and time are required" });
   }
 
   bookingAttempts.inc();
 
-  const lockKey = `${config.seatLockPrefix}${seatCode}`;
+  // Lock key now includes date and time to allow concurrent bookings for different slots
+  const lockKey = `${config.seatLockPrefix}${seatCode}:${date}:${time}`;
   let hasLock = false;
 
   try {
@@ -124,8 +155,8 @@ bookingRouter.post("/book-seat", async (req, res) => {
 
     const result =
       strategy === "locked"
-        ? await bookSeatWithLock(seatCode, userId)
-        : await bookSeatNaive(seatCode, userId);
+        ? await bookSeatWithLock(seatCode, userId, date, time)
+        : await bookSeatNaive(seatCode, userId, date, time);
 
     if (!result.ok) {
       if (result.status === 409) {

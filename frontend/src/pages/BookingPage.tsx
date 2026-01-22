@@ -17,21 +17,23 @@ export default function BookingPage() {
     const [selectedDate, setSelectedDate] = useState(DATES[0]);
     const [selectedTime, setSelectedTime] = useState(TIMES[2]);
 
-    const fetchSeats = useCallback(async () => {
-        if (seats.length === 0) setLoading(true);
+    const fetchSeats = useCallback(async (isInitial = false) => {
         try {
-            const data = await getSeats();
+            const data = await getSeats(selectedDate, selectedTime);
             setSeats(data);
         } catch {
             console.error("Failed to load seats");
         } finally {
-            setLoading(false);
+            if (isInitial) setLoading(false);
         }
-    }, [seats.length]);
+    }, [selectedDate, selectedTime]);
 
     useEffect(() => {
-        fetchSeats();
-        const interval = setInterval(fetchSeats, 2000);
+        // Initial fetch
+        fetchSeats(true);
+        
+        // Polling (no loading spinner)
+        const interval = setInterval(() => fetchSeats(false), 2000);
         return () => clearInterval(interval);
     }, [fetchSeats]);
 

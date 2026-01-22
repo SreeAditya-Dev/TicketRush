@@ -15,13 +15,17 @@ model Seat {
   bookedAt  DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  booking   Booking?
+  bookings  Booking[]
 }
 
 model Booking {
   id        Int      @id @default(autoincrement())
   userId    String
-  seatId    Int      @unique
+  seatId    Int
+  date      String
+  time      String
   createdAt DateTime @default(now())
   seat      Seat     @relation(fields: [seatId], references: [id])
+
+  @@unique([seatId, date, time])
 }

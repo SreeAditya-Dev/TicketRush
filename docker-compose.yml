@@ -30,6 +30,8 @@ services:
   backend:
     build:
       context: ./backend
+    restart: unless-stopped
+    command: sh -c "./node_modules/.bin/prisma db push && node dist/index.js"
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,10 +47,11 @@ services:
   frontend:
     build:
       context: ./frontend
+    restart: unless-stopped
     depends_on:
       - backend
     ports:
-      - "3000:80"
+      - "3002:80"
 
   prometheus:
     image: prom/prometheus:v2.48.0

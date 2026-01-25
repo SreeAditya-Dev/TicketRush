@@ -4,6 +4,9 @@
   <img src="https://iili.io/f4YLnuj.jpg" alt="TicketRush Logo"  />
 </p>
 
+## Live Website
+[Visit TicketRush Live](https://ticketrush.vercel.app)
+
 ## 1. The Real-World Problem
 
 **Imagine a popular concert (like Taylor Swift) or a limited sneaker drop.**

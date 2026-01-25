@@ -1,0 +1,38 @@
+services:
+  # Backend Service
+  - type: web
+    name: ticketrush-backend
+    env: docker
+    root: backend
+    plan: free
+    region: singapore # Closest to AP-South (India) usually, or stick to US. User has redis in ap-south-1. Render has Singapore.
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false # User must provide this in dashboard to keep it secret/from env
+      - key: REDIS_URL
+        sync: false
+    healthCheckPath: /api/v1/health
+
+  # Prometheus Service
+  - type: pserv # Private service (internal only) or web if you want to access it. User likely wants to access it.
+    name: ticketrush-prometheus
+    env: docker
+    root: prometheus
+    plan: free
+    envVars:
+      - key: PORT
+        value: 9090
+
+  # Grafana Service
+  - type: web
+    name: ticketrush-grafana
+    env: docker
+    root: grafana
+    plan: free
+    envVars:
+      - key: GF_SECURITY_ADMIN_PASSWORD
+        generateValue: true
+      - key: GF_SERVER_ROOT_URL
+        value: https://ticketrush-grafana.onrender.com # Placeholder, they might need to update

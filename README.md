@@ -160,3 +160,7 @@ This project moves beyond simple CRUD (Create, Read, Update, Delete). It demonst
 1.  **Concurrency Control**: Handling multiple users fighting for a single resource without data corruption.
 2.  **System Reliability**: Using Redis as a buffer to protect the primary database.
 3.  **Observability**: Not just coding blindly—using Grafana dashboards to visualize real-time system performance and prove the implementation works under high load.
+
+## Grafana & Prometheus
+![Grafan dashboard](https://iili.io/f6ZASCG.png)
+![Prometheus](https://iili.io/f6ZAvQs.png)

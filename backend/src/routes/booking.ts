@@ -51,6 +51,9 @@ const bookSeatNaive = async (seatCode: string, userId: string, eventId: string, 
 
     return { ok: true, booking };
   } catch (error: unknown) {
+    if (isPrismaError(error) && (error.code === "P2002" || error.code === "P2034")) {
+      return { ok: false, status: 409, message: "Seat already booked for this time" };
+    }
     throw error;
   } finally {
     stopTimer();
@@ -97,6 +100,9 @@ const bookSeatWithLock = async (
 
     return result as BookingResult;
   } catch (error: unknown) {
+    if (isPrismaError(error) && (error.code === "P2002" || error.code === "P2034")) {
+      return { ok: false, status: 409, message: "Seat already booked for this time" };
+    }
     throw error;
   } finally {
     stopTimer();

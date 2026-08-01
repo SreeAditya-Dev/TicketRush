@@ -64,7 +64,16 @@ export default function PaymentPage() {
                 bookSeat(code, userId, "locked", eventId || id || "", date, time)
             );
 
-            await Promise.all(promises);
+            const results = await Promise.all(promises);
+            const failures = results.filter((r) => !r.ok);
+
+            if (failures.length > 0) {
+                const errorMsg = "message" in failures[0] ? failures[0].message : "Seat already booked!";
+                alert(`❌ Booking Failed: ${errorMsg}\n\nSomeone may have booked this seat moments ago. Please select another seat.`);
+                setProcessing(false);
+                return;
+            }
+
             setSuccess(true);
         } catch (error) {
             alert("Payment failed or seats taken!");

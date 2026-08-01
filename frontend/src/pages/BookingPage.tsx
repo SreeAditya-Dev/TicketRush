@@ -126,12 +126,8 @@ export default function BookingPage() {
             return row >= startRow && row <= endRow;
         });
 
-        if (loading && seats.length === 0) return (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                <div className="w-8 h-8 border-4 border-brand-purple border-t-transparent rounded-full animate-spin"></div>
-                <div className="text-slate-500 text-sm">Loading seat map...</div>
-            </div>
-        );
+        const rowCount = endRow - startRow + 1;
+        const skeletonSeats = Array.from({ length: rowCount * 10 }, (_, i) => i);
 
         return (
             <div className="mb-8 relative">
@@ -144,7 +140,18 @@ export default function BookingPage() {
                 </div>
                 
                 <div className="grid grid-cols-10 gap-y-3 gap-x-2 max-w-lg mx-auto px-4">
-                    {gridSeats.map((seat) => {
+                    {loading && seats.length === 0 ? (
+                        // Skeleton Loading
+                        skeletonSeats.map((i) => (
+                            <div
+                                key={`skeleton-${i}`}
+                                className="relative w-full pt-[80%] rounded-t-lg bg-theatre-700/30 animate-pulse"
+                            >
+                                <div className="absolute bottom-1 left-0.5 right-0.5 h-1 rounded-full bg-black/20"></div>
+                            </div>
+                        ))
+                    ) : (
+                        gridSeats.map((seat) => {
                         const isSelected = selectedSeats.includes(seat.code);
                         const isBooked = seat.isBooked;
                         const isHeldByOther = Boolean(seat.isHeld) && seat.heldBy !== userId;
@@ -176,7 +183,8 @@ export default function BookingPage() {
                                 </span>
                             </button>
                         );
-                    })}
+                    })
+                    )}
                 </div>
             </div>
         );
@@ -398,9 +406,29 @@ export default function BookingPage() {
                     </div>
 
                     {loading && seats.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                            <div className="w-8 h-8 border-4 border-brand-purple border-t-transparent rounded-full animate-spin"></div>
-                            <div className="text-slate-500 text-sm">Checking live ticket availability...</div>
+                        <div className="space-y-4 mb-12">
+                            {gaTiers.map((tier) => (
+                                <div 
+                                    key={tier.id}
+                                    className="bg-theatre-800/80 backdrop-blur-md border border-theatre-700/80 rounded-2xl p-5 md:p-6 animate-pulse flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+                                >
+                                    <div className="space-y-3 max-w-lg flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-5 w-24 bg-theatre-700/50 rounded-full"></div>
+                                            <div className="h-4 w-16 bg-theatre-700/50 rounded"></div>
+                                        </div>
+                                        <div className="h-6 w-3/4 bg-theatre-700/50 rounded"></div>
+                                        <div className="space-y-2">
+                                            <div className="h-3 w-full bg-theatre-700/50 rounded"></div>
+                                            <div className="h-3 w-5/6 bg-theatre-700/50 rounded"></div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-3">
+                                        <div className="h-8 w-20 bg-theatre-700/50 rounded"></div>
+                                        <div className="h-10 w-32 bg-theatre-700/50 rounded-xl"></div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : (
                         <div className="space-y-4 mb-12">

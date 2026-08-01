@@ -19,12 +19,25 @@ export default function Layout() {
               </span>
             </Link>
 
-            <nav className="flex gap-4 text-sm font-medium text-slate-400">
-               {location.pathname !== "/" && (
-                  <Link to="/" className="hover:text-white transition-colors">
-                    Back to Events
-                  </Link>
-               )}
+            <nav className="flex items-center gap-5 text-sm font-medium text-slate-300">
+              <Link
+                to="/"
+                className={`transition-colors hover:text-brand-gold ${
+                  location.pathname === "/" ? "text-white font-bold" : "text-slate-400"
+                }`}
+              >
+                Home
+              </Link>
+              <Link
+                to="/events"
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-1.5 ${
+                  location.pathname === "/events"
+                    ? "bg-brand-purple text-white shadow-glow-purple scale-105"
+                    : "bg-slate-800/80 border border-slate-700 hover:border-brand-purple/50 text-slate-300 hover:text-white hover:bg-slate-800"
+                }`}
+              >
+                <span>Explore Events</span>
+              </Link>
             </nav>
           </div>
         </div>

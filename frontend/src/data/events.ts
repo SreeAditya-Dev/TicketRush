@@ -7,6 +7,8 @@ export interface EventData {
     venue: string;
     image: string;
     price: string;
+    priceValue: number;
+    category: string;
     tags: string[];
     rating: number;
 }
@@ -18,9 +20,11 @@ export const EVENTS: EventData[] = [
         artist: "Taylor Swift",
         date: "Fri, 06 Jun",
         time: "07:00 PM",
-        venue: "Wembley Stadium",
+        venue: "Wembley Stadium, London",
         image: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=1000&auto=format&fit=crop",
         price: "From ₹350",
+        priceValue: 350,
+        category: "Pop",
         tags: ["Pop", "Global Phenomenon"],
         rating: 4.9
     },
@@ -30,10 +34,12 @@ export const EVENTS: EventData[] = [
         artist: "Coldplay",
         date: "Sat, 07 Jun",
         time: "08:00 PM",
-        venue: "O2 Arena",
+        venue: "O2 Arena, London",
         image: "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=1000&auto=format&fit=crop",
         price: "From ₹400",
-        tags: ["Alternative", "Visual Spectacle"],
+        priceValue: 400,
+        category: "Rock",
+        tags: ["Alternative", "Visual Spectacle", "Rock"],
         rating: 4.8
     },
     {
@@ -42,23 +48,111 @@ export const EVENTS: EventData[] = [
         artist: "The Weeknd",
         date: "Sun, 08 Jun",
         time: "09:00 PM",
-        venue: "SoFi Stadium",
+        venue: "SoFi Stadium, Los Angeles",
         image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1000&auto=format&fit=crop",
         price: "From ₹310",
+        priceValue: 310,
+        category: "R&B",
         tags: ["R&B", "Synth-Pop"],
         rating: 4.7
     },
     {
         id: "ed-sheeran-math",
-        title: "+–=÷x Tour",
+        title: "+–=÷x Tour (Mathematics)",
         artist: "Ed Sheeran",
         date: "Mon, 09 Jun",
         time: "07:30 PM",
-        venue: "MSG",
+        venue: "Madison Square Garden, NY",
         image: "https://images.unsplash.com/photo-1501612780327-45045538702b?q=80&w=1000&auto=format&fit=crop",
         price: "From ₹250",
+        priceValue: 250,
+        category: "Acoustic",
         tags: ["Acoustic", "Pop"],
         rating: 4.6
+    },
+    {
+        id: "dua-lipa-optimism",
+        title: "Radical Optimism Tour",
+        artist: "Dua Lipa",
+        date: "Wed, 11 Jun",
+        time: "08:00 PM",
+        venue: "Sydney Opera House, AU",
+        image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop",
+        price: "From ₹380",
+        priceValue: 380,
+        category: "Pop",
+        tags: ["Pop", "Dance", "Electronic"],
+        rating: 4.9
+    },
+    {
+        id: "travis-scott-maximus",
+        title: "Circus Maximus Stadium Tour",
+        artist: "Travis Scott",
+        date: "Fri, 13 Jun",
+        time: "09:30 PM",
+        venue: "MetLife Stadium, New Jersey",
+        image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1000&auto=format&fit=crop",
+        price: "From ₹450",
+        priceValue: 450,
+        category: "Hip-Hop",
+        tags: ["Hip-Hop", "Rap", "High Energy"],
+        rating: 4.8
+    },
+    {
+        id: "ar-rahman-wonder",
+        title: "Wonder of Sound - Live in Concert",
+        artist: "A.R. Rahman",
+        date: "Sat, 14 Jun",
+        time: "07:00 PM",
+        venue: "D.Y. Patil Stadium, Mumbai",
+        image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=1000&auto=format&fit=crop",
+        price: "From ₹350",
+        priceValue: 350,
+        category: "Fusion",
+        tags: ["World", "Classical", "Fusion"],
+        rating: 5.0
+    },
+    {
+        id: "billie-eilish-hard-soft",
+        title: "Hit Me Hard and Soft World Tour",
+        artist: "Billie Eilish",
+        date: "Sun, 15 Jun",
+        time: "08:00 PM",
+        venue: "Kia Forum, Los Angeles",
+        image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1000&auto=format&fit=crop",
+        price: "From ₹340",
+        priceValue: 340,
+        category: "Alternative",
+        tags: ["Alternative", "Indie", "Vocal"],
+        rating: 4.9
+    },
+    {
+        id: "metallica-m72",
+        title: "M72 World Tour - No Repeat Weekend",
+        artist: "Metallica",
+        date: "Fri, 20 Jun",
+        time: "06:30 PM",
+        venue: "Olympiastadion, Munich",
+        image: "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?q=80&w=1000&auto=format&fit=crop",
+        price: "From ₹500",
+        priceValue: 500,
+        category: "Rock",
+        tags: ["Metal", "Rock", "Legendary"],
+        rating: 4.9
+    },
+    {
+        id: "bruno-mars-dolby",
+        title: "Live at Dolby Live",
+        artist: "Bruno Mars",
+        date: "Sat, 21 Jun",
+        time: "08:30 PM",
+        venue: "Park MGM, Las Vegas",
+        image: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?q=80&w=1000&auto=format&fit=crop",
+        price: "From ₹420",
+        priceValue: 420,
+        category: "R&B",
+        tags: ["Funk", "Soul", "Pop"],
+        rating: 4.8
     }
 ];
 

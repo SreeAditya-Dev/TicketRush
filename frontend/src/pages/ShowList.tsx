@@ -38,9 +38,12 @@ export default function ShowList() {
                         Secure your seats for the world's most anticipated tours.
                         Immersive sound, breathtaking visuals, and memories that last a lifetime.
                     </p>
-                    <button className="bg-white text-theatre-900 hover:bg-brand-gold hover:text-black font-bold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-glow">
+                    <Link 
+                        to="/events"
+                        className="inline-block bg-white text-theatre-900 hover:bg-brand-gold hover:text-black font-extrabold py-4 px-9 rounded-full transition-all duration-300 transform hover:scale-105 shadow-glow text-center text-base"
+                    >
                         Explore Events
-                    </button>
+                    </Link>
                 </div>
             </div>
 
@@ -51,7 +54,14 @@ export default function ShowList() {
                         <h2 className="text-3xl font-bold text-white mb-2">Trending Now</h2>
                         <p className="text-slate-400">Events selling out fast in your area</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-3">
+                        <Link 
+                            to="/events"
+                            className="hidden sm:inline-flex items-center gap-1.5 text-xs sm:text-sm text-brand-gold hover:text-yellow-300 font-bold px-4 py-2.5 bg-brand-gold/10 hover:bg-brand-gold/20 border border-brand-gold/30 rounded-xl transition-all duration-300 shadow-sm"
+                        >
+                            <span>View All ({EVENTS.length}) Shows</span>
+                            <ArrowRight className="w-4 h-4" />
+                        </Link>
                         <button
                             onClick={() => scroll('left')}
                             className="w-10 h-10 rounded-full border border-theatre-600 flex items-center justify-center text-slate-400 hover:bg-theatre-700 hover:text-white transition-colors"

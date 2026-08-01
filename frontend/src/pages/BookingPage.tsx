@@ -165,22 +165,24 @@ export default function BookingPage() {
                                 title={isHeldByOther ? "Reserved: checkout in progress by another customer" : isBooked ? "Sold out" : `Seat ${seat.code}`}
                                 onClick={() => toggleSeat(seat.code)}
                                 className={`
-                                    relative group w-full pt-[80%] rounded-t-lg transition-all duration-300
-                                    flex items-center justify-center
+                                    relative group w-full aspect-[5/4] rounded-t-lg transition-colors duration-150
+                                    flex items-center justify-center overflow-hidden select-none
+                                    ${isBooked || isHeldByOther ? "cursor-not-allowed" : "cursor-pointer"}
                                     ${isBooked 
-                                        ? "bg-slate-200 border border-slate-300 cursor-not-allowed opacity-50" 
+                                        ? "bg-slate-200 border border-slate-300 opacity-60" 
                                         : isHeldByOther
-                                            ? "bg-amber-100 border border-amber-400 cursor-not-allowed animate-pulse"
+                                            ? "bg-amber-100 border border-amber-400 animate-pulse"
                                             : isSelected 
-                                                ? "bg-blue-600 border border-blue-700 shadow-md shadow-blue-600/25 scale-105 z-10" 
-                                                : "bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-400 shadow-2xs"
+                                                ? "bg-blue-600 border border-blue-700 shadow-md shadow-blue-600/25 z-10" 
+                                                : "bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-500 shadow-2xs"
                                     }
                                 `}
                             >
-                                {/* Seat Armrests Effect */}
-                                <div className={`absolute bottom-1 left-0.5 right-0.5 h-1 rounded-full ${isSelected ? 'bg-white/30' : 'bg-slate-300'}`}></div>
+                                {/* Seat Armrests / Base Horizontal Line */}
+                                <div className={`absolute bottom-0 inset-x-0 h-1.5 border-t ${isSelected ? 'bg-blue-700 border-blue-500/40' : isBooked ? 'bg-slate-300 border-slate-400' : 'bg-slate-100 border-slate-200 group-hover:bg-blue-100 group-hover:border-blue-300'}`}></div>
                                 
-                                <span className={`text-[9px] font-bold ${isSelected ? "text-white" : isBooked ? "text-slate-400" : "text-slate-600 group-hover:text-blue-600"}`}>
+                                {/* Centered Seat Number positioned cleanly above horizontal line */}
+                                <span className={`absolute inset-0 pb-1.5 flex items-center justify-center text-[10px] sm:text-xs font-mono font-extrabold z-10 transition-colors ${isSelected ? "text-white" : isBooked ? "text-slate-500" : "text-slate-800 group-hover:text-blue-700"}`}>
                                     {seat.code.replace("S", "").replace(/^0+/, "")}
                                 </span>
                             </button>

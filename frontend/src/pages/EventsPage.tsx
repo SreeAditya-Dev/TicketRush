@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { EVENTS, EventData } from "../data/events";
 import { 
@@ -20,11 +20,107 @@ type SortOption = "featured" | "rating-desc" | "price-asc" | "price-desc";
 
 const CATEGORIES = ["All", "Pop", "Rock", "R&B", "Hip-Hop", "Alternative", "Acoustic", "Fusion"];
 
+// Reusable component with built-in image skeleton loading state to prevent layout shift & delayed pop-in
+function EventImage({ src, alt, className }: { src: string; alt: string; className: string }) {
+    const [imageLoaded, setImageLoaded] = useState(false);
+    return (
+        <div className="relative w-full h-full bg-theatre-950 overflow-hidden">
+            {!imageLoaded && (
+                <div className="absolute inset-0 bg-theatre-800 animate-pulse flex items-center justify-center">
+                    <Music className="w-8 h-8 text-theatre-600 animate-pulse" />
+                </div>
+            )}
+            <img
+                src={src}
+                alt={alt}
+                onLoad={() => setImageLoaded(true)}
+                className={`${className} transition-all duration-700 ease-out ${
+                    imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
+                }`}
+            />
+        </div>
+    );
+}
+
+// Skeleton card for Grid view while loading
+function GridSkeletonCard() {
+    return (
+        <div className="bg-theatre-800/85 backdrop-blur-md rounded-3xl overflow-hidden border border-theatre-700/80 flex flex-col justify-between animate-pulse">
+            <div>
+                <div className="relative aspect-[4/3] bg-theatre-700/40 flex items-center justify-center">
+                    <Music className="w-10 h-10 text-theatre-600/50" />
+                </div>
+                <div className="p-6 pt-4 space-y-3 border-b border-theatre-700/50">
+                    <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 rounded-full bg-theatre-700 flex-shrink-0" />
+                        <div className="h-3 bg-theatre-700 rounded-md w-1/3" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 rounded-full bg-theatre-700 flex-shrink-0" />
+                        <div className="h-3 bg-theatre-700 rounded-md w-2/3" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 rounded-full bg-theatre-700 flex-shrink-0" />
+                        <div className="h-3 bg-theatre-700 rounded-md w-1/2" />
+                    </div>
+                </div>
+            </div>
+            <div className="p-6 pt-4 bg-theatre-900/40 flex items-center justify-between">
+                <div className="space-y-1.5">
+                    <div className="h-2.5 w-20 bg-theatre-700 rounded" />
+                    <div className="h-6 w-24 bg-theatre-700 rounded-md" />
+                </div>
+                <div className="h-12 w-32 bg-theatre-700/80 rounded-xl" />
+            </div>
+        </div>
+    );
+}
+
+// Skeleton card for List view while loading
+function ListSkeletonCard() {
+    return (
+        <div className="bg-theatre-800/85 backdrop-blur-md rounded-3xl overflow-hidden border border-theatre-700/80 p-4 md:p-6 flex flex-col md:flex-row items-center gap-6 animate-pulse">
+            <div className="w-full md:w-64 h-52 md:h-44 rounded-2xl bg-theatre-700/40 flex items-center justify-center flex-shrink-0">
+                <Music className="w-10 h-10 text-theatre-600/50" />
+            </div>
+            <div className="flex-1 w-full md:w-auto space-y-3">
+                <div className="flex gap-2">
+                    <div className="h-5 w-16 bg-theatre-700/60 rounded-md" />
+                    <div className="h-5 w-20 bg-theatre-700/60 rounded-md" />
+                </div>
+                <div className="h-8 w-3/4 bg-theatre-700 rounded-md" />
+                <div className="h-4 w-1/2 bg-theatre-700/80 rounded-md mb-2" />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-theatre-700/60">
+                    <div className="h-3 bg-theatre-700 rounded-md w-4/5" />
+                    <div className="h-3 bg-theatre-700 rounded-md w-3/4" />
+                    <div className="h-3 bg-theatre-700 rounded-md w-full" />
+                </div>
+            </div>
+            <div className="w-full md:w-auto md:border-l md:border-theatre-700/80 md:pl-8 flex md:flex-col items-center md:items-end justify-between md:justify-center gap-4 py-2">
+                <div className="space-y-1.5 text-left md:text-right">
+                    <div className="h-2.5 w-20 bg-theatre-700 rounded" />
+                    <div className="h-7 w-24 bg-theatre-700 rounded-md" />
+                </div>
+                <div className="h-12 w-36 bg-theatre-700/80 rounded-xl" />
+            </div>
+        </div>
+    );
+}
+
 export default function EventsPage() {
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
     const [sortBy, setSortBy] = useState<SortOption>("featured");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+    // Simulate event hydration and smooth loading transition on page reload
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 700);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Memoized filtering and sorting engine for peak 60fps performance
     const filteredEvents = useMemo(() => {
@@ -181,7 +277,22 @@ export default function EventsPage() {
                 </div>
 
                 {/* Event Showcase Display (Grid or List Layout) */}
-                {filteredEvents.length === 0 ? (
+                {isLoading ? (
+                    /* SKELETON LOADING STATE */
+                    viewMode === "grid" ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {[1, 2, 3, 4, 5, 6].map((i) => (
+                                <GridSkeletonCard key={i} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {[1, 2, 3, 4].map((i) => (
+                                <ListSkeletonCard key={i} />
+                            ))}
+                        </div>
+                    )
+                ) : filteredEvents.length === 0 ? (
                     /* Zero Results Empty State Card */
                     <div className="bg-theatre-800/60 backdrop-blur-md border border-theatre-700/80 rounded-3xl p-12 text-center max-w-lg mx-auto shadow-2xl animate-in fade-in zoom-in duration-300">
                         <div className="w-16 h-16 bg-theatre-900 border border-theatre-600 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-500 shadow-inner">
@@ -211,7 +322,7 @@ export default function EventsPage() {
                                     {/* Image Container with Dynamic Lighting */}
                                     <div className="relative aspect-[4/3] overflow-hidden bg-theatre-950">
                                         <div className="absolute inset-0 bg-gradient-to-t from-theatre-800 via-theatre-900/30 to-transparent z-10 opacity-80 group-hover:opacity-60 transition-opacity duration-500" />
-                                        <img
+                                        <EventImage
                                             src={show.image}
                                             alt={show.title}
                                             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
@@ -288,7 +399,7 @@ export default function EventsPage() {
                             >
                                 {/* Left Thumbnail */}
                                 <div className="relative w-full md:w-64 h-52 md:h-44 rounded-2xl overflow-hidden flex-shrink-0 bg-theatre-950">
-                                    <img
+                                    <EventImage
                                         src={show.image}
                                         alt={show.title}
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"

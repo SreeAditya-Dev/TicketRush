@@ -2,7 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { Router } from "express";
 import { bookingAttempts, bookingFailedOversold, bookingSuccess, startDbTimer } from "../metrics";
 import { prisma } from "../prisma";
-import { acquireLock, releaseLock } from "../redis";
+import { redis, acquireLock, releaseLock } from "../redis";
 import { config } from "../config";
 
 export type Strategy = "naive" | "locked";
@@ -122,17 +122,91 @@ bookingRouter.get("/seats", async (req, res) => {
       });
       const bookedSeatIds = new Set(bookings.map(b => b.seatId));
       
-      const seatsWithStatus = seats.map(s => ({
-          ...s,
-          isBooked: bookedSeatIds.has(s.id),
-          bookedAt: null // Legacy support
-      }));
+      // Check temporary 5-minute Redis holds
+      const holdKeys = seats.map(s => `seat_hold:${s.code}:${eventId}:${date}:${time}`);
+      const holdValues = await redis.mget(holdKeys);
+
+      const seatsWithStatus = seats.map((s, idx) => {
+          const isBooked = bookedSeatIds.has(s.id);
+          const heldBy = holdValues[idx];
+          return {
+              ...s,
+              isBooked,
+              isHeld: !isBooked && Boolean(heldBy),
+              heldBy: !isBooked ? heldBy : null,
+              bookedAt: null
+          };
+      });
       return res.json({ seats: seatsWithStatus });
   }
 
   // Default fallback if no eventId provided (show all open)
-  const seatsWithStatus = seats.map(s => ({ ...s, isBooked: false, bookedAt: null }));
+  const seatsWithStatus = seats.map(s => ({ ...s, isBooked: false, isHeld: false, heldBy: null, bookedAt: null }));
   res.json({ seats: seatsWithStatus });
+});
+
+bookingRouter.post("/hold-seats", async (req, res) => {
+  try {
+    const { seatCodes, eventId, date, time, userId = "user_guest" } = req.body || {};
+    if (!Array.isArray(seatCodes) || seatCodes.length === 0 || !eventId || !date || !time) {
+      return res.status(400).json({ message: "seatCodes, eventId, date, and time are required" });
+    }
+
+    // 1. Verify none of the seats are already permanently sold in PostgreSQL
+    const seatsInDb = await prisma.seat.findMany({ where: { code: { in: seatCodes } } });
+    const seatIds = seatsInDb.map(s => s.id);
+    const existingBookings = await prisma.booking.findMany({
+      where: { seatId: { in: seatIds }, eventId, date, time }
+    });
+    if (existingBookings.length > 0) {
+      return res.status(409).json({ ok: false, message: "One or more selected seats have already been purchased!" });
+    }
+
+    // 2. Try to acquire 5-minute (300s) Redis hold for each seat
+    const acquiredHolds: string[] = [];
+    for (const code of seatCodes) {
+      const holdKey = `seat_hold:${code}:${eventId}:${date}:${time}`;
+      const resSet = await redis.set(holdKey, userId, "EX", 300, "NX");
+      if (resSet === "OK") {
+        acquiredHolds.push(holdKey);
+      } else {
+        const currentHolder = await redis.get(holdKey);
+        if (currentHolder === userId) {
+          // Refresh TTL to 300s for same user
+          await redis.expire(holdKey, 300);
+          acquiredHolds.push(holdKey);
+        } else {
+          // Conflict! Held by someone else in checkout
+          if (acquiredHolds.length > 0) {
+            await redis.del(acquiredHolds);
+          }
+          return res.status(423).json({
+            ok: false,
+            message: `Seat ${code.replace("S", "")} is currently being reserved by another customer in checkout. Please choose a different seat or check back in 5 minutes.`
+          });
+        }
+      }
+    }
+
+    return res.status(200).json({ ok: true, message: "Seats reserved for 5 minutes", expiresIn: 300 });
+  } catch (error) {
+    console.error("Error holding seats:", error);
+    return res.status(500).json({ message: "Internal server error during seat reservation" });
+  }
+});
+
+bookingRouter.post("/release-holds", async (req, res) => {
+  try {
+    const { seatCodes, eventId, date, time } = req.body || {};
+    if (Array.isArray(seatCodes) && eventId && date && time) {
+      const keysToDel = seatCodes.map(code => `seat_hold:${code}:${eventId}:${date}:${time}`);
+      await redis.del(keysToDel);
+    }
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error("Error releasing holds:", error);
+    return res.status(500).json({ message: "Internal server error releasing holds" });
+  }
 });
 
 export const executeSeatBooking = async (
@@ -166,6 +240,9 @@ export const executeSeatBooking = async (
     }
     if (result.ok) {
       bookingSuccess.inc();
+      // Clear temporary hold key upon confirmed purchase
+      const holdKey = `seat_hold:${seatCode}:${eventId}:${date}:${time}`;
+      await redis.del(holdKey);
     }
     return result;
   } finally {

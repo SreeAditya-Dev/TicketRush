@@ -128,3 +128,36 @@ export const verifyAndConfirmBooking = async (
     return { ok: false, message: String(error) };
   }
 };
+
+export const holdSeats = async (
+  seatCodes: string[],
+  eventId: string,
+  date: string,
+  time: string,
+  userId: string
+): Promise<{ ok: boolean; message: string; expiresIn?: number }> => {
+  try {
+    const response = await api.post("/hold-seats", { seatCodes, eventId, date, time, userId });
+    return { ok: true, message: response.data?.message || "Held", expiresIn: response.data?.expiresIn || 300 };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      const msg = typeof error.response?.data?.message === "string" ? error.response.data.message : error.message;
+      return { ok: false, message: msg };
+    }
+    return { ok: false, message: String(error) };
+  }
+};
+
+export const releaseHolds = async (
+  seatCodes: string[],
+  eventId: string,
+  date: string,
+  time: string,
+  userId: string
+): Promise<void> => {
+  try {
+    await api.post("/release-holds", { seatCodes, eventId, date, time, userId });
+  } catch (error) {
+    console.error("Failed to release holds:", error);
+  }
+};

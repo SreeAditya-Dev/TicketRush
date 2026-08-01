@@ -1,9 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getSeats } from "../api";
+import { getSeats, holdSeats } from "../api";
 import { Seat } from "../types";
 import { ChevronLeft, Calendar, Clock, Info } from "lucide-react";
 import { getEventById } from "../data/events";
+
+const getSessionUserId = () => {
+    let uid = sessionStorage.getItem("ticketrush_user_id");
+    if (!uid) {
+        uid = "user_" + Math.random().toString(36).substring(2, 10);
+        sessionStorage.setItem("ticketrush_user_id", uid);
+    }
+    return uid;
+};
 
 export default function BookingPage() {
     const { id } = useParams();
@@ -11,6 +20,8 @@ export default function BookingPage() {
     const [seats, setSeats] = useState<Seat[]>([]);
     const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [userId] = useState<string>(getSessionUserId);
+    const [holding, setHolding] = useState(false);
 
     // Get event data
     const event = id ? getEventById(id) : undefined;
@@ -73,8 +84,18 @@ export default function BookingPage() {
         }, 0);
     };
 
-    const handleProceed = () => {
-        if (selectedSeats.length === 0 || !event) return;
+    const handleProceed = async () => {
+        if (selectedSeats.length === 0 || !event || holding) return;
+        setHolding(true);
+        const res = await holdSeats(selectedSeats, id || "", selectedDate, selectedTime, userId);
+        setHolding(false);
+
+        if (!res.ok) {
+            alert(`⚠️ Cannot proceed to checkout: ${res.message}`);
+            fetchSeats(false);
+            return;
+        }
+
         navigate(`/payment/${id}`, {
             state: {
                 selectedSeats,
@@ -85,7 +106,9 @@ export default function BookingPage() {
                 eventTitle: event.title,
                 eventArtist: event.artist,
                 eventVenue: event.venue,
-                eventImage: event.image
+                eventImage: event.image,
+                userId,
+                expiresIn: res.expiresIn || 300,
             }
         });
     };
@@ -117,20 +140,24 @@ export default function BookingPage() {
                     {gridSeats.map((seat) => {
                         const isSelected = selectedSeats.includes(seat.code);
                         const isBooked = seat.isBooked;
+                        const isHeldByOther = Boolean(seat.isHeld) && seat.heldBy !== userId;
 
                         return (
                             <button
                                 key={seat.id}
-                                disabled={isBooked}
+                                disabled={isBooked || isHeldByOther}
+                                title={isHeldByOther ? "Reserved: checkout in progress by another customer" : isBooked ? "Sold out" : `Seat ${seat.code}`}
                                 onClick={() => toggleSeat(seat.code)}
                                 className={`
                                     relative group w-full pt-[80%] rounded-t-lg transition-all duration-300
                                     flex items-center justify-center
                                     ${isBooked 
                                         ? "bg-theatre-700/50 cursor-not-allowed opacity-40" 
-                                        : isSelected 
-                                            ? "bg-brand-gold shadow-glow scale-105 z-10" 
-                                            : "bg-theatre-700 hover:bg-brand-purple/50 hover:shadow-glow-purple border border-theatre-600 hover:border-brand-purple"
+                                        : isHeldByOther
+                                            ? "bg-amber-600/70 border border-amber-500 cursor-not-allowed animate-pulse"
+                                            : isSelected 
+                                                ? "bg-brand-gold shadow-glow scale-105 z-10" 
+                                                : "bg-theatre-700 hover:bg-brand-purple/50 hover:shadow-glow-purple border border-theatre-600 hover:border-brand-purple"
                                     }
                                 `}
                             >
@@ -221,7 +248,7 @@ export default function BookingPage() {
                 </div>
 
                 {/* Legend */}
-                <div className="flex justify-center gap-6 mt-8 py-4 border-t border-theatre-700/50 mx-6">
+                <div className="flex flex-wrap justify-center gap-6 mt-8 py-4 border-t border-theatre-700/50 mx-6">
                     <div className="flex flex-col items-center gap-2">
                         <div className="w-5 h-5 rounded-t-md bg-theatre-700 border border-theatre-600"></div>
                         <span className="text-[10px] text-slate-500">Available</span>
@@ -229,6 +256,10 @@ export default function BookingPage() {
                     <div className="flex flex-col items-center gap-2">
                         <div className="w-5 h-5 rounded-t-md bg-brand-gold shadow-glow"></div>
                         <span className="text-[10px] text-slate-500">Selected</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-5 h-5 rounded-t-md bg-amber-600/70 border border-amber-500 animate-pulse"></div>
+                        <span className="text-[10px] text-slate-500">In Checkout</span>
                     </div>
                     <div className="flex flex-col items-center gap-2">
                         <div className="w-5 h-5 rounded-t-md bg-theatre-700/50 opacity-50"></div>
@@ -262,17 +293,12 @@ export default function BookingPage() {
                                     </div>
 
                                     <button
-
                                         onClick={handleProceed}
-
-                                        className="bg-brand-purple hover:bg-violet-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-brand-purple/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-
+                                        disabled={holding}
+                                        className="bg-brand-purple hover:bg-violet-500 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-brand-purple/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
                                     >
-
-                                        Proceed <ChevronLeft className="w-4 h-4 rotate-180" />
-
+                                        {holding ? "Reserving..." : "Proceed"} <ChevronLeft className="w-4 h-4 rotate-180" />
                                     </button>
-
                                 </div>
 
                             </div>

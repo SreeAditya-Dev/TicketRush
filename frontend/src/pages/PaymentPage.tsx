@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { bookSeat, createRazorpayOrder, verifyAndConfirmBooking } from "../api";
-import { ArrowLeft, CreditCard, Smartphone, Check, Download, ShieldCheck, Mail, Lock } from "lucide-react";
+import { bookSeat, createRazorpayOrder, verifyAndConfirmBooking, releaseHolds } from "../api";
+import { ArrowLeft, CreditCard, Smartphone, Check, Download, ShieldCheck, Mail, Lock, Timer } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -27,35 +27,27 @@ export default function PaymentPage() {
 
     // State from BookingPage
     const { 
-        selectedSeats, 
-        totalAmount, 
-        date, 
-        time,
-        eventId,
-        eventTitle,
-        eventArtist,
-        eventVenue,
-        eventImage
-    } = location.state || {
-        selectedSeats: [], 
-        totalAmount: 0, 
-        date: "N/A", 
-        time: "N/A",
-        eventId: id,
-        eventTitle: "Event",
-        eventArtist: "Artist",
-        eventVenue: "Venue",
-        eventImage: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=1000&auto=format&fit=crop"
-    };
+        selectedSeats = [], 
+        totalAmount = 0, 
+        date = "N/A", 
+        time = "N/A",
+        eventId = id || "",
+        eventTitle = "Event",
+        eventArtist = "Artist",
+        eventVenue = "Venue",
+        eventImage = "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=1000&auto=format&fit=crop",
+        userId = "user-123",
+        expiresIn = 300
+    } = location.state || {};
 
     const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "gpay" | "card">("razorpay");
     const [email, setEmail] = useState("");
-    const [userId, setUserId] = useState("user-123"); 
     const [processing, setProcessing] = useState(false);
     const [success, setSuccess] = useState(false);
     const [qrScanned, setQrScanned] = useState(false);
     const [paymentRefId, setPaymentRefId] = useState<string>("SIMULATED-REF");
     const [emailSent, setEmailSent] = useState(false);
+    const [timeLeft, setTimeLeft] = useState<number>(expiresIn);
 
     const ticketRef = useRef<HTMLDivElement>(null);
 
@@ -68,12 +60,38 @@ export default function PaymentPage() {
         loadRazorpayScript();
     }, []);
 
+    // Live 5-minute checkout countdown timer
+    useEffect(() => {
+        if (success) return;
+        if (timeLeft <= 0) {
+            alert("⏱️ Your 5-minute checkout reservation has expired and your seats have been released back to public sale!");
+            releaseHolds(selectedSeats, eventId, date, time, userId);
+            navigate(-1);
+            return;
+        }
+        const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+        return () => clearInterval(timer);
+    }, [timeLeft, success, selectedSeats, eventId, date, time, userId, navigate]);
+
     // Auto-complete payment when QR is scanned in simulated mode
     useEffect(() => {
         if (qrScanned && paymentMethod === "gpay" && !processing && !success) {
             handleSimulatedPayment();
         }
     }, [qrScanned]);
+
+    const handleBack = () => {
+        if (!success) {
+            releaseHolds(selectedSeats, eventId, date, time, userId);
+        }
+        navigate(-1);
+    };
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    };
 
     const handleRazorpayPayment = async () => {
         if (!email.trim() || !email.includes("@")) {
@@ -328,13 +346,30 @@ export default function PaymentPage() {
 
     return (
         <div className="min-h-screen bg-theatre-900 text-slate-200 p-4 md:p-8">
-            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-white mb-8 transition-colors">
-                <ArrowLeft className="w-5 h-5" /> Back to Booking
+            <button onClick={handleBack} className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors">
+                <ArrowLeft className="w-5 h-5" /> Back to Seat Selection (Release Hold)
             </button>
 
             <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
                 {/* Order Summary */}
                 <div className="space-y-6">
+                    <div className={`p-4 rounded-2xl border flex items-center justify-between transition-all duration-300 ${
+                        timeLeft < 60 
+                            ? "bg-red-950/80 border-red-500 text-red-300 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.4)]" 
+                            : "bg-amber-950/60 border-amber-500/50 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                    }`}>
+                        <div className="flex items-center gap-3">
+                            <Timer className={`w-6 h-6 flex-shrink-0 ${timeLeft < 60 ? "text-red-400 animate-bounce" : "text-amber-400"}`} />
+                            <div>
+                                <h4 className="font-bold text-sm text-white">Seats Reserved for Checkout</h4>
+                                <p className="text-xs opacity-85">Please finish payment before temporary lock expires.</p>
+                            </div>
+                        </div>
+                        <div className="font-mono text-xl font-extrabold px-3 py-1 bg-black/40 rounded-xl border border-white/10 tracking-widest text-white shadow-inner">
+                            {formatTime(timeLeft)}
+                        </div>
+                    </div>
+
                     <h1 className="text-3xl font-bold text-white mb-2">Order Summary</h1>
 
                     <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 shadow-xl">
@@ -381,7 +416,7 @@ export default function PaymentPage() {
                         <div>
                             <h4 className="font-bold text-white text-sm">100% Guaranteed & Secure Booking</h4>
                             <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                                Your tickets are protected by instant Redis lock verification. If any seat conflict occurs during checkout, you will receive an automatic, instant full refund.
+                                Your seats are exclusively held for you during this countdown. If any seat conflict occurs post-payment, you receive an automated, instant full refund.
                             </p>
                         </div>
                     </div>

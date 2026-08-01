@@ -2,6 +2,15 @@
 
 **An enterprise-grade, concurrency-resilient ticketing platform engineered to handle massive traffic spikes without overselling, featuring automated checkout holds, real-time cryptographic payment verification, and digital ticket delivery.**
 
+<p align="center">
+  <img src="https://iili.io/f4YLnuj.jpg" alt="TicketRush Logo"  />
+</p>
+
+## Live Website
+[Visit TicketRush Live](https://ticketrush.vercel.app)
+
+## 1. The Real-World Problem
+
 ---
 
 ## 1. The Real-World Problem & Our Solution
@@ -44,27 +53,40 @@ We solve high-concurrency ticket distribution using a **3-Layer Defense-In-Depth
 
 ---
 
-## 3. Key Architectural Innovations
+## 3. Development Lifecycle
 
-### ⏱️ 1. Zero-Loss Checkout Reservation Holds (5-Minute TTL)
-A critical flaw in basic ticketing platforms is **"Ticket Freezing"**—when a customer goes to checkout, closes their browser tab, and leaves an unpaid ticket indefinitely locked in "Sold" status, costing organizers revenue.
+### 🏗️ Phase 1: The Setup (Docker)
+We use `docker-compose.yml` to spin up the entire infrastructure:
+*   `postgres` (Database)
+*   `redis` (Cache)
+*   `prometheus` (Metrics)
+*   `grafana` (Visualization)
 
-**How TicketRush Solves This:**
-*   **Temporary Reservation**: When a customer taps *"Proceed to Pay"*, the backend creates a temporary lock in Redis: `SET seat_hold:S005:event:date:time userId EX 300 NX`.
-*   **Real-Time Map Reflection**: For 5 minutes, Seat S005 turns orange (**"In Checkout"**) on all other users' interactive seating charts.
-*   **Automatic Zero-Intervention Release**: If the customer abandons the page, card fails, or closes the window, **Redis automatically evicts the hold when the 300-second timer reaches zero**. The ticket instantly reverts to green (**"Available"**) for public sale with **₹0 revenue lost**.
+### 🚀 Phase 2: The Backend (Node/Express)
+**Endpoint:** `POST /book-seat`
 
-### 🔐 2. Cryptographic Payment Verification & Automated Clash Recovery
-We enforce bank-grade checkout integrity using Razorpay integration:
-*   **Signature Authentication**: Before confirming a reservation, the server hashes `razorpay_order_id + "|" + razorpay_payment_id` using our confidential secret and matches it against `razorpay_signature` via HMAC-SHA256.
-*   **Automated Instant Rollback Refund**: In the extremely rare occurrence where two concurrent checkouts somehow collide post-payment, PostgreSQL rejects the duplicate write (`409 Conflict`). Our event engine intercepts this rejection and immediately fires an automated API refund (`razorpay.payments.refund`), alerting the customer within seconds.
+#### The "Naive" Approach (Demonstrating the Failure)
+1.  Select seat from DB.
+2.  Check if `is_booked` is false.
+3.  Update `is_booked` to true.
+*   **Result**: Under load testing (e.g., 100 concurrent requests), this **oversells** the seat due to race conditions.
 
-### 💺 3. Dynamic 3-Tier Seating & Financial Modeling
-Prices dynamically scale across stadium sections with built-in convenience billing:
-*   **👑 Recliner (VIP)**: Rows 1 & 2 — **₹570** per seat.
-*   **⭐ Prime (Executive)**: Rows 3 to 6 — **₹350** per seat.
-*   **🎟️ Classic (General)**: Rows 7+ — **₹310** per seat.
-*   **Billing Security**: Subtotals plus a standard ₹45 convenience fee are automatically transformed into INR paise (`₹ × 100`) on the server to prevent front-end price tampering.
+#### The "Pro" Approach (The Fix)
+1.  **Redis Lock**: When a user clicks buy, acquire a lock in Redis: `SET seat_10_lock true NX EX 10` (Set if Not Exists, expire in 10s).
+2.  **Check**:
+    *   If lock fails: Return "Seat is currently being booked by someone else."
+    *   If lock succeeds: Proceed to update Postgres.
+3.  **Release**: Delete the lock in Redis.
+*   **Result**: Zero overselling, guaranteed consistency.
+
+### 📊 Phase 3: The Monitoring (Prometheus & Grafana)
+We rely on custom metrics to prove the system works:
+*   `booking_attempts_total` (Counter)
+*   `booking_success_total` (Counter)
+*   `booking_failed_oversold` (Counter)
+*   `db_query_duration_seconds` (Histogram)
+
+**Goal**: A Grafana dashboard showing a massive spike in "Attempts" but a flat line at 100 for "Success" (proving logic creates a ceiling matching inventory).
 
 ---
 
@@ -77,25 +99,48 @@ Prices dynamically scale across stadium sections with built-in convenience billi
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Customer as User (Browser)
-    participant UI as React UI (Vite)
-    participant API as Node.js API
-    participant Redis as Redis Cloud (Mutex & TTL)
-    participant RZP as Razorpay Gateway
-    participant DB as PostgreSQL (Prisma)
-    participant Resend as Resend Email SDK
+    
+    %% DEFINING PARTICIPANTS WITH ICONS
+    actor User as 👤 User
+    participant API as 🟢 Node API
+    participant Redis as 🔴 Redis
+    participant DB as 🐘 Postgres
+    participant Metrics as 🔥 Prometheus
 
-    Note over Customer,UI: Step 1: Seat Selection & 5-Min Hold
-    Customer->>UI: Selects Seat S005 & Clicks "Proceed"
-    UI->>API: POST /api/v1/hold-seats (Seat: S005)
-    API->>Redis: SET seat_hold:S005:event:date:time user_id EX 300 NX
-    alt Seat Already Held by Someone Else
-        Redis-->>API: 0 (Nil/Failed)
-        API-->>UI: 423 Locked (Seat in checkout by another user)
-        UI-->>Customer: Displays Alert & Updates Map
-    else Hold Acquired Successfully
+    %% FLOW START
+    User->>API: ⚡ POST /book-seat (SeatID: 10)
+    
+    %% CRITICAL SECTION BLOCK
+    rect rgb(255, 248, 225)
+    Note right of API: 🔒 CRITICAL SECTION (Race Condition Protection)
+    
+    API->>Redis: SET seat_10_lock true NX EX 10
+    
+    alt ❌ Lock Failed (Already Locked)
+        Redis-->>API: 0 (False)
+        API-->>User: 🚫 423 Locked / Retry Later
+    else ✅ Lock Acquired
         Redis-->>API: OK
-        API-->>UI: 200 OK (Starts 5-Min Live Countdown)
+        
+        Note over API, DB: Start ACID Transaction
+        API->>DB: BEGIN TRANSACTION
+        API->>DB: SELECT * FROM seats WHERE id=10 FOR UPDATE
+        
+        alt ⚠️ Seat Already Booked
+            DB-->>API: is_booked = true
+            API->>DB: ROLLBACK
+            API-->>User: ❌ 400 Seat Gone
+            API->>Metrics: 📈 Inc booking_failed_oversold
+        else 🎫 Seat Available
+            DB-->>API: is_booked = false
+            API->>DB: UPDATE seats SET is_booked=true
+            API->>DB: INSERT into bookings...
+            API->>DB: COMMIT
+            API-->>User: 🎉 200 Success
+            API->>Metrics: 📈 Inc booking_success_total
+        end
+        
+        API->>Redis: DEL seat_10_lock
     end
 
     Note over Customer,RZP: Step 2: Payment Order & Signature Verification
@@ -125,6 +170,8 @@ sequenceDiagram
         API-->>UI: 200 OK (Confirmed & Ticket Generated)
         UI-->>Customer: Renders Digital Pass with QR Code & PDF Download
     end
+    
+    Metrics->>API: 🔍 Scrape /metrics
 ```
 
 ---
@@ -140,8 +187,10 @@ During flash sales, guessing system performance invites disastrous silent crashe
 
 ---
 
-## 6. Why This Engineering Impresses
-1.  **True Enterprise Concurrency**: Demonstrates mastery over multithreading race conditions, Distributed Mutex patterns, and database SQL isolation tiers.
-2.  **Self-Healing Financial Architecture**: By linking database rollback failures directly to third-party payment gateway refund APIs, the app eliminates orphaned payments and manual accounting reconciliations.
-3.  **Zero-Leak Inventory Management**: Using automated Redis key expiration (`EX 300`) solves the infamous e-commerce cart-abandonment locking problem without taxing primary storage.
-4.  **End-to-End Polish**: From animated glassmorphism interfaces and interactive seat layouts to backend cryptographic token hashing and automated HTML invoicing, TicketRush delivers a production-grade full-stack reality.
+1.  **Concurrency Control**: Handling multiple users fighting for a single resource without data corruption.
+2.  **System Reliability**: Using Redis as a buffer to protect the primary database.
+3.  **Observability**: Not just coding blindly—using Grafana dashboards to visualize real-time system performance and prove the implementation works under high load.
+
+## Grafana & Prometheus
+![Grafan dashboard](https://iili.io/f6ZASCG.png)
+![Prometheus](https://iili.io/f6ZAvQs.png)

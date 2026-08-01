@@ -142,8 +142,17 @@ export default function PaymentPage() {
         }
 
         try {
-            // 1. Create Order on Backend
-            const orderRes = await createRazorpayOrder(upiAmount, eventId || id || "", selectedSeats);
+            // 1. Create Order on Backend with metadata for webhook resilience
+            const orderRes = await createRazorpayOrder(upiAmount, eventId || id || "", selectedSeats, {
+                userId,
+                email: email.trim(),
+                date,
+                time,
+                eventTitle: eventTitle || "Event",
+                eventArtist: eventArtist || "Live Performance",
+                eventVenue: eventVenue || "Venue",
+                strategy: "locked",
+            });
             if (!orderRes.ok) {
                 const errorMsg = "message" in orderRes ? orderRes.message : "Unknown gateway error";
                 toast(errorMsg, { type: "error", title: "Payment Gateway Initialization Failed" });

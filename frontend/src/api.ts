@@ -91,13 +91,15 @@ export interface PaymentOrderResponse {
 export const createRazorpayOrder = async (
   amount: number,
   eventId: string,
-  seats: string[]
+  seats: string[],
+  metadata: Record<string, any> = {}
 ): Promise<{ ok: true; data: PaymentOrderResponse } | { ok: false; message: string }> => {
   try {
     const response = await api.post<PaymentOrderResponse>("/payment/create-order", {
       amount,
       eventId,
       seats,
+      ...metadata,
     });
     return { ok: true, data: response.data };
   } catch (error: unknown) {

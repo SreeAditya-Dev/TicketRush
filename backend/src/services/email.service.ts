@@ -2,6 +2,17 @@ import { Resend } from "resend";
 import { config } from "../config";
 import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
+import fs from "fs";
+import path from "path";
+
+function getLogoPath(): string | undefined {
+  const possiblePaths = [
+    path.resolve(__dirname, "../../assets/logo.png"),
+    path.resolve(process.cwd(), "assets/logo.png"),
+    path.resolve(process.cwd(), "../frontend/public/logo.png"),
+  ];
+  return possiblePaths.find((p) => fs.existsSync(p));
+}
 
 export interface TicketEmailPayload {
   to: string;
@@ -37,6 +48,14 @@ async function generateTicketPdfBuffer(payload: TicketEmailPayload): Promise<Buf
 
     // Header banner
     doc.rect(15, 15, 370, 95).fill("#7c3aed");
+    const logoPath = getLogoPath();
+    if (logoPath) {
+      try {
+        doc.image(logoPath, 35, 38, { fit: [50, 50] });
+      } catch (err) {
+        console.warn("Could not embed logo image in PDF:", err);
+      }
+    }
     doc.fillColor("#ffffff").fontSize(20).font("Helvetica-Bold").text("TICKET CONFIRMED", 25, 38, { align: "center" });
     doc.fillColor("#fbbf24").fontSize(12).text(`${eventArtist}`, 25, 68, { align: "center" });
 

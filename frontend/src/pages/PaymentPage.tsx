@@ -167,7 +167,7 @@ export default function PaymentPage() {
                 currency: orderRes.data.currency,
                 name: "TicketRush",
                 description: `${eventTitle} (${selectedSeats.length} Seats)`,
-                image: eventImage,
+                image: window.location.origin + "/logo.png",
                 order_id: orderRes.data.orderId,
                 handler: async (response: any) => {
                     setProcessing(true);
@@ -285,6 +285,10 @@ export default function PaymentPage() {
                             crossOrigin="anonymous"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-theatre-900 to-transparent" />
+                        <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700/60 flex items-center gap-2 shadow-lg z-20">
+                            <img src="/logo.png" alt="TicketRush Logo" className="w-5 h-5 object-contain" crossOrigin="anonymous" />
+                            <span className="text-xs font-bold tracking-wide text-white">TicketRush</span>
+                        </div>
                         <div className="absolute bottom-4 left-6">
                             <h2 className="text-2xl font-bold text-white">{eventTitle}</h2>
                             <p className="text-brand-gold font-medium">{eventArtist}</p>

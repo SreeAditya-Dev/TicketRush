@@ -381,7 +381,7 @@ export default function EventsPage() {
                                         to={`/book/${show.id}`}
                                         className="bg-brand-purple hover:bg-violet-500 text-white font-bold px-5 py-3 rounded-xl flex items-center gap-1.5 transition-all duration-300 shadow-lg shadow-brand-purple/25 hover:shadow-glow-purple active:scale-95 group/btn"
                                     >
-                                        <span>Book Now</span>
+                                        <span>{show.eventType === "general-admission" ? "Get Tickets" : "Select Seats"}</span>
                                         <ArrowUpRight className="w-4 h-4 transition-transform duration-300 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
                                     </Link>
                                 </div>
@@ -452,7 +452,7 @@ export default function EventsPage() {
                                         to={`/book/${show.id}`}
                                         className="bg-brand-purple hover:bg-violet-500 text-white font-bold px-6 py-3.5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-brand-purple/30 hover:shadow-glow-purple active:scale-95 whitespace-nowrap"
                                     >
-                                        <span>Select Seats</span>
+                                        <span>{show.eventType === "general-admission" ? "Get Tickets" : "Select Seats"}</span>
                                         <ArrowUpRight className="w-4 h-4" />
                                     </Link>
                                 </div>

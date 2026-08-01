@@ -11,6 +11,7 @@ export interface EventData {
     category: string;
     tags: string[];
     rating: number;
+    eventType?: "seated" | "general-admission";
 }
 
 export const EVENTS: EventData[] = [
@@ -26,7 +27,8 @@ export const EVENTS: EventData[] = [
         priceValue: 350,
         category: "Pop",
         tags: ["Pop", "Global Phenomenon"],
-        rating: 4.9
+        rating: 4.9,
+        eventType: "seated"
     },
     {
         id: "coldplay-spheres",
@@ -40,7 +42,8 @@ export const EVENTS: EventData[] = [
         priceValue: 400,
         category: "Rock",
         tags: ["Alternative", "Visual Spectacle", "Rock"],
-        rating: 4.8
+        rating: 4.8,
+        eventType: "seated"
     },
     {
         id: "weeknd-after-hours",
@@ -54,7 +57,8 @@ export const EVENTS: EventData[] = [
         priceValue: 310,
         category: "R&B",
         tags: ["R&B", "Synth-Pop"],
-        rating: 4.7
+        rating: 4.7,
+        eventType: "seated"
     },
     {
         id: "ed-sheeran-math",
@@ -68,7 +72,8 @@ export const EVENTS: EventData[] = [
         priceValue: 250,
         category: "Acoustic",
         tags: ["Acoustic", "Pop"],
-        rating: 4.6
+        rating: 4.6,
+        eventType: "seated"
     },
     {
         id: "dua-lipa-optimism",
@@ -82,7 +87,8 @@ export const EVENTS: EventData[] = [
         priceValue: 380,
         category: "Pop",
         tags: ["Pop", "Dance", "Electronic"],
-        rating: 4.9
+        rating: 4.9,
+        eventType: "seated"
     },
     {
         id: "travis-scott-maximus",
@@ -96,7 +102,8 @@ export const EVENTS: EventData[] = [
         priceValue: 450,
         category: "Hip-Hop",
         tags: ["Hip-Hop", "Rap", "High Energy"],
-        rating: 4.8
+        rating: 4.8,
+        eventType: "general-admission"
     },
     {
         id: "ar-rahman-wonder",
@@ -110,7 +117,8 @@ export const EVENTS: EventData[] = [
         priceValue: 350,
         category: "Fusion",
         tags: ["World", "Classical", "Fusion"],
-        rating: 5.0
+        rating: 5.0,
+        eventType: "seated"
     },
     {
         id: "billie-eilish-hard-soft",
@@ -124,7 +132,8 @@ export const EVENTS: EventData[] = [
         priceValue: 340,
         category: "Alternative",
         tags: ["Alternative", "Indie", "Vocal"],
-        rating: 4.9
+        rating: 4.9,
+        eventType: "general-admission"
     },
     {
         id: "metallica-m72",
@@ -138,7 +147,8 @@ export const EVENTS: EventData[] = [
         priceValue: 500,
         category: "Rock",
         tags: ["Metal", "Rock", "Legendary"],
-        rating: 4.9
+        rating: 4.9,
+        eventType: "general-admission"
     },
     {
         id: "bruno-mars-dolby",
@@ -152,7 +162,8 @@ export const EVENTS: EventData[] = [
         priceValue: 420,
         category: "R&B",
         tags: ["Funk", "Soul", "Pop"],
-        rating: 4.8
+        rating: 4.8,
+        eventType: "seated"
     }
 ];
 

@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { bookSeat, createRazorpayOrder, verifyAndConfirmBooking, releaseHolds } from "../api";
 import { ArrowLeft, CreditCard, Smartphone, Check, Download, ShieldCheck, Mail, Lock, Timer } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { getEventById } from "../data/events";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -39,6 +40,28 @@ export default function PaymentPage() {
         userId = "user-123",
         expiresIn = 300
     } = location.state || {};
+
+    const event = getEventById(eventId || id || "");
+    const isGA = event?.eventType === "general-admission";
+
+    const getTicketSummary = () => {
+        if (!isGA) return selectedSeats.map((s: string) => s.replace('S', '')).join(', ');
+        let vip = 0, fast = 0, ga = 0;
+        selectedSeats.forEach((code: string) => {
+            const match = code.match(/(\d+)/);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (num <= 20) vip++;
+                else if (num <= 60) fast++;
+                else ga++;
+            }
+        });
+        const parts = [];
+        if (vip > 0) parts.push(`${vip}x VIP Pit`);
+        if (fast > 0) parts.push(`${fast}x Fast-Track`);
+        if (ga > 0) parts.push(`${ga}x GA Floor`);
+        return parts.join(', ') || `${selectedSeats.length}x General Admission`;
+    };
 
     const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "gpay" | "card">("razorpay");
     const [email, setEmail] = useState("");
@@ -249,7 +272,7 @@ export default function PaymentPage() {
                         <Check className="w-10 h-10 text-white" />
                     </div>
                     <h1 className="text-3xl font-bold mb-2">You're Going!</h1>
-                    <p className="text-slate-400">Your seats have been securely reserved.</p>
+                    <p className="text-slate-400">{isGA ? "Your tickets have been securely reserved." : "Your seats have been securely reserved."}</p>
                     
                     {emailSent ? (
                         <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full bg-brand-purple/20 text-brand-gold text-xs font-semibold border border-brand-purple/40">
@@ -304,8 +327,8 @@ export default function PaymentPage() {
                                 <div className="font-semibold text-slate-200">{eventVenue}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Seats</div>
-                                <div className="font-semibold text-brand-gold">{selectedSeats.map(s => s.replace('S', '')).join(', ')}</div>
+                                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{isGA ? "Admission Type" : "Seats"}</div>
+                                <div className="font-semibold text-brand-gold">{getTicketSummary()}</div>
                             </div>
                         </div>
 
@@ -347,7 +370,7 @@ export default function PaymentPage() {
     return (
         <div className="min-h-screen bg-theatre-900 text-slate-200 p-4 md:p-8">
             <button onClick={handleBack} className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors">
-                <ArrowLeft className="w-5 h-5" /> Back to Seat Selection (Release Hold)
+                <ArrowLeft className="w-5 h-5" /> Back to {isGA ? "Ticket Selection" : "Seat Selection"} (Release Hold)
             </button>
 
             <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -361,7 +384,7 @@ export default function PaymentPage() {
                         <div className="flex items-center gap-3">
                             <Timer className={`w-6 h-6 flex-shrink-0 ${timeLeft < 60 ? "text-red-400 animate-bounce" : "text-amber-400"}`} />
                             <div>
-                                <h4 className="font-bold text-sm text-white">Seats Reserved for Checkout</h4>
+                                <h4 className="font-bold text-sm text-white">{isGA ? "Tickets Reserved for Checkout" : "Seats Reserved for Checkout"}</h4>
                                 <p className="text-xs opacity-85">Please finish payment before temporary lock expires.</p>
                             </div>
                         </div>
@@ -393,7 +416,7 @@ export default function PaymentPage() {
                         <div className="space-y-3 mb-6">
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">Tickets ({selectedSeats.length})</span>
-                                <span className="text-white font-medium">{selectedSeats.join(', ')}</span>
+                                <span className="text-white font-medium">{getTicketSummary()}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-400">Subtotal</span>
@@ -416,7 +439,7 @@ export default function PaymentPage() {
                         <div>
                             <h4 className="font-bold text-white text-sm">100% Guaranteed & Secure Booking</h4>
                             <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                                Your seats are exclusively held for you during this countdown. If any seat conflict occurs post-payment, you receive an automated, instant full refund.
+                                Your {isGA ? "tickets" : "seats"} are exclusively held for you during this countdown. If any conflict occurs post-payment, you receive an automated, instant full refund.
                             </p>
                         </div>
                     </div>

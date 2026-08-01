@@ -71,7 +71,10 @@ const bookSeatWithLock = async (
   try {
     const result = await prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
-        const seat = await tx.seat.findUnique({ where: { code: seatCode } });
+        const seat = await tx.seat.findUnique({ 
+          where: { code: seatCode },
+          select: { id: true, code: true } // Only select needed fields
+        });
         if (!seat) {
           return { ok: false, status: 404, message: "Seat not found" } as const;
         }
@@ -82,7 +85,8 @@ const bookSeatWithLock = async (
                 eventId,
                 date,
                 time
-            }
+            },
+            select: { id: true } // Only need to know if it exists
         });
 
         if (existingBooking) {
@@ -156,6 +160,14 @@ bookingRouter.get("/availability", async (req, res) => {
   }
 
   try {
+    // Try Redis cache first (1-second TTL)
+    const cacheKey = `avail:${eventId}:${date}:${time}`;
+    const cached = await redis.get(cacheKey);
+    
+    if (cached) {
+      return res.json(JSON.parse(cached));
+    }
+
     // Count total bookings
     const bookingCount = await prisma.booking.count({
       where: { eventId, date, time }
@@ -166,15 +178,68 @@ bookingRouter.get("/availability", async (req, res) => {
     const availableSeats = totalSeats - bookingCount;
     const soldOut = availableSeats <= 0;
 
-    return res.json({ 
+    const result = { 
       totalSeats,
       bookedSeats: bookingCount,
       availableSeats: Math.max(0, availableSeats),
       soldOut,
       availabilityPercentage: ((availableSeats / totalSeats) * 100).toFixed(2)
-    });
+    };
+
+    // Cache for 1 second
+    await redis.set(cacheKey, JSON.stringify(result), "EX", 1);
+
+    return res.json(result);
   } catch (error) {
     console.error("Error checking availability:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// New endpoint: Validate specific seats availability (batch check)
+bookingRouter.post("/validate-seats", async (req, res) => {
+  try {
+    const { seatCodes, eventId, date, time } = req.body || {};
+    
+    if (!Array.isArray(seatCodes) || seatCodes.length === 0 || !eventId || !date || !time) {
+      return res.status(400).json({ message: "seatCodes, eventId, date, and time are required" });
+    }
+
+    // Find seats
+    const seatsInDb = await prisma.seat.findMany({ 
+      where: { code: { in: seatCodes } },
+      select: { id: true, code: true } // Only needed fields
+    });
+    
+    const seatIds = seatsInDb.map(s => s.id);
+
+    // Check if already booked
+    const existingBookings = await prisma.booking.findMany({
+      where: { seatId: { in: seatIds }, eventId, date, time },
+      select: { seatId: true } // Only needed field
+    });
+
+    const bookedSeatIds = new Set(existingBookings.map(b => b.seatId));
+
+    // Check Redis holds
+    const holdKeys = seatCodes.map(code => `seat_hold:${code}:${eventId}:${date}:${time}`);
+    const holdValues = await redis.mget(holdKeys);
+
+    // Build availability map
+    const availability = seatsInDb.map((seat, idx) => ({
+      code: seat.code,
+      available: !bookedSeatIds.has(seat.id) && !holdValues[idx]
+    }));
+
+    const availableSeats = availability.filter(s => s.available);
+
+    return res.json({
+      requestedSeats: seatCodes.length,
+      availableSeats: availableSeats.length,
+      availability
+    });
+  } catch (error) {
+    console.error("Error validating seats:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -254,7 +319,11 @@ export const executeSeatBooking = async (
   bookingAttempts.inc();
   
   // Early availability check to reduce database load
-  const seat = await prisma.seat.findUnique({ where: { code: seatCode } });
+  const seat = await prisma.seat.findUnique({ 
+    where: { code: seatCode },
+    select: { id: true, code: true } // Optimized: only select needed fields
+  });
+  
   if (!seat) {
     bookingFailedOversold.inc();
     return { ok: false, status: 404, message: "Seat not found" };
@@ -262,7 +331,8 @@ export const executeSeatBooking = async (
 
   // Quick check if already booked (reduces lock contention)
   const existingBooking = await prisma.booking.findFirst({
-    where: { seatId: seat.id, eventId, date, time }
+    where: { seatId: seat.id, eventId, date, time },
+    select: { id: true } // Optimized: only need to check existence
   });
   
   if (existingBooking) {
@@ -295,6 +365,10 @@ export const executeSeatBooking = async (
       // Clear temporary hold key upon confirmed purchase
       const holdKey = `seat_hold:${seatCode}:${eventId}:${date}:${time}`;
       await redis.del(holdKey);
+      
+      // Invalidate availability cache
+      const cacheKey = `avail:${eventId}:${date}:${time}`;
+      await redis.del(cacheKey);
     }
     return result;
   } finally {

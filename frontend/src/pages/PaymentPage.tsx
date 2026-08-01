@@ -204,7 +204,7 @@ export default function PaymentPage() {
                     contact: "9988776655",
                 },
                 theme: {
-                    color: "#7c3aed",
+                    color: "#2563eb",
                 },
                 modal: {
                     ondismiss: () => {
@@ -231,7 +231,7 @@ export default function PaymentPage() {
 
         try {
             const canvas = await html2canvas(ticketRef.current, {
-                backgroundColor: "#0b0c15",
+                backgroundColor: "#ffffff",
                 scale: 2,
                 useCORS: true,
                 allowTaint: true,
@@ -253,21 +253,21 @@ export default function PaymentPage() {
 
     if (success) {
         return (
-            <div className="min-h-screen bg-theatre-900 text-white flex flex-col items-center justify-center p-4">
+            <div className="min-h-screen bg-[#f4f6f9] text-slate-900 flex flex-col items-center justify-center p-4">
                 <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(34,197,94,0.5)]">
+                    <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
                         <Check className="w-10 h-10 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold mb-2">You're Going!</h1>
-                    <p className="text-slate-400">{isGA ? "Your tickets have been securely reserved." : "Your seats have been securely reserved."}</p>
+                    <h1 className="text-3xl font-black mb-2">You're Going!</h1>
+                    <p className="text-slate-600">{isGA ? "Your tickets have been securely reserved." : "Your seats have been securely reserved."}</p>
                     
                     {emailSent ? (
-                        <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full bg-brand-purple/20 text-brand-gold text-xs font-semibold border border-brand-purple/40">
+                        <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
                             <Mail className="w-3.5 h-3.5" /> Confirmation email & ticket receipt sent to {email}!
                         </div>
                     ) : (
                         email && (
-                            <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700">
+                            <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
                                 ℹ️ Booking confirmed (Email delivery pending)
                             </div>
                         )
@@ -275,7 +275,7 @@ export default function PaymentPage() {
                 </div>
 
                 {/* TICKET UI */}
-                <div ref={ticketRef} className="bg-theatre-800 border border-theatre-700 rounded-3xl overflow-hidden max-w-sm w-full shadow-2xl relative mb-8">
+                <div ref={ticketRef} className="bg-white border border-slate-200 rounded-3xl overflow-hidden max-w-sm w-full shadow-xl relative mb-8 text-slate-800">
                     {/* Top Section */}
                     <div className="relative h-48">
                         <img
@@ -284,57 +284,57 @@ export default function PaymentPage() {
                             alt="Concert"
                             crossOrigin="anonymous"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-theatre-900 to-transparent" />
-                        <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700/60 flex items-center gap-2 shadow-lg z-20">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-200 flex items-center gap-2 shadow-sm z-20">
                             <img src="/logo.png" alt="TicketRush Logo" className="w-5 h-5 rounded-md object-contain" crossOrigin="anonymous" />
-                            <span className="text-xs font-bold tracking-wide text-white">TicketRush</span>
+                            <span className="text-xs font-black tracking-wide text-slate-900">TicketRush</span>
                         </div>
-                        <div className="absolute bottom-4 left-6">
-                            <h2 className="text-2xl font-bold text-white">{eventTitle}</h2>
-                            <p className="text-brand-gold font-medium">{eventArtist}</p>
+                        <div className="absolute bottom-4 left-6 z-20">
+                            <h2 className="text-2xl font-black text-white">{eventTitle}</h2>
+                            <p className="text-blue-300 font-bold">{eventArtist}</p>
                         </div>
                     </div>
 
                     {/* Perforation */}
                     <div className="relative flex items-center justify-between px-2 -mt-3 z-10">
-                        <div className="w-6 h-6 bg-theatre-900 rounded-full -ml-3" />
-                        <div className="flex-1 border-t-2 border-dashed border-slate-600 mx-2" />
-                        <div className="w-6 h-6 bg-theatre-900 rounded-full -mr-3" />
+                        <div className="w-6 h-6 bg-[#f4f6f9] border-r border-slate-200 rounded-full -ml-4" />
+                        <div className="flex-1 border-t-2 border-dashed border-slate-300 mx-2" />
+                        <div className="w-6 h-6 bg-[#f4f6f9] border-l border-slate-200 rounded-full -mr-4" />
                     </div>
 
                     {/* Details */}
-                    <div className="p-6 pt-2">
+                    <div className="p-6 pt-3">
                         <div className="grid grid-cols-2 gap-4 mb-4">
                             <div>
-                                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Date</div>
-                                <div className="font-semibold text-slate-200">{date}</div>
+                                <div className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Date</div>
+                                <div className="font-bold text-slate-900">{date}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Time</div>
-                                <div className="font-semibold text-slate-200">{time}</div>
+                                <div className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Time</div>
+                                <div className="font-bold text-slate-900">{time}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Venue</div>
-                                <div className="font-semibold text-slate-200">{eventVenue}</div>
+                                <div className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Venue</div>
+                                <div className="font-bold text-slate-900">{eventVenue}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{isGA ? "Admission Type" : "Seats"}</div>
-                                <div className="font-semibold text-brand-gold">{getTicketSummary()}</div>
+                                <div className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">{isGA ? "Admission Type" : "Seats"}</div>
+                                <div className="font-black text-blue-600">{getTicketSummary()}</div>
                             </div>
                         </div>
 
-                        <div className="mb-6 pt-3 border-t border-slate-700/50 flex items-center justify-between">
-                            <span className="text-xs text-slate-400 font-medium">Payment Ref ID:</span>
-                            <span className="font-mono text-xs text-brand-gold">{paymentRefId}</span>
+                        <div className="mb-6 pt-3 border-t border-slate-100 flex items-center justify-between">
+                            <span className="text-xs text-slate-500 font-semibold">Payment Ref ID:</span>
+                            <span className="font-mono text-xs font-bold text-slate-900">{paymentRefId}</span>
                         </div>
 
                         <div className="flex justify-center mb-6">
-                            <div className="bg-white p-2 rounded-lg">
-                                <QRCodeSVG value={`TICKET-${eventId || id}-${selectedSeats.join('-')}-${paymentRefId}`} size={100} />
+                            <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl shadow-2xs">
+                                <QRCodeSVG value={`TICKET-${eventId || id}-${selectedSeats.join('-')}-${paymentRefId}`} size={110} />
                             </div>
                         </div>
 
-                        <div className="text-center text-[10px] text-slate-500 uppercase tracking-widest">
+                        <div className="text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                             Scan at Entry • Gate 4A
                         </div>
                     </div>
@@ -343,13 +343,13 @@ export default function PaymentPage() {
                 <div className="flex gap-4">
                     <button
                         onClick={downloadTicket}
-                        className="bg-brand-purple hover:bg-violet-600 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-colors shadow-glow-purple"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all shadow-md shadow-blue-600/20 active:scale-95"
                     >
                         <Download className="w-5 h-5" /> Download PDF
                     </button>
                     <button
                         onClick={() => navigate('/')}
-                        className="bg-theatre-700 hover:bg-theatre-600 text-white font-bold py-3 px-6 rounded-xl transition-colors"
+                        className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-6 rounded-xl transition-all active:scale-95"
                     >
                         Back Home
                     </button>
@@ -359,77 +359,77 @@ export default function PaymentPage() {
     }
 
     return (
-        <div className="min-h-screen bg-theatre-900 text-slate-200 p-4 md:p-8">
-            <button onClick={handleBack} className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors">
-                <ArrowLeft className="w-5 h-5" /> Back to {isGA ? "Ticket Selection" : "Seat Selection"} (Release Hold)
+        <div className="min-h-screen bg-[#f4f6f9] text-slate-700 p-4 md:p-8">
+            <button onClick={handleBack} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-6 transition-colors font-bold text-sm">
+                <ArrowLeft className="w-4 h-4" /> Back to {isGA ? "Ticket Selection" : "Seat Selection"} (Release Hold)
             </button>
 
-            <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Order Summary */}
                 <div className="space-y-6">
                     <div className={`p-4 rounded-2xl border flex items-center justify-between transition-all duration-300 ${
                         timeLeft < 60 
-                            ? "bg-red-950/80 border-red-500 text-red-300 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.4)]" 
-                            : "bg-amber-950/60 border-amber-500/50 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                            ? "bg-red-50 border-red-200 text-red-900 animate-pulse shadow-xs" 
+                            : "bg-amber-50 border-amber-200 text-amber-900 shadow-2xs"
                     }`}>
                         <div className="flex items-center gap-3">
-                            <Timer className={`w-6 h-6 flex-shrink-0 ${timeLeft < 60 ? "text-red-400 animate-bounce" : "text-amber-400"}`} />
+                            <Timer className={`w-6 h-6 flex-shrink-0 ${timeLeft < 60 ? "text-red-600 animate-bounce" : "text-amber-600"}`} />
                             <div>
-                                <h4 className="font-bold text-sm text-white">{isGA ? "Tickets Reserved for Checkout" : "Seats Reserved for Checkout"}</h4>
-                                <p className="text-xs opacity-85">Please finish payment before temporary lock expires.</p>
+                                <h4 className="font-bold text-sm text-slate-900">{isGA ? "Tickets Reserved for Checkout" : "Seats Reserved for Checkout"}</h4>
+                                <p className="text-xs text-slate-600">Please finish payment before temporary lock expires.</p>
                             </div>
                         </div>
-                        <div className="font-mono text-xl font-extrabold px-3 py-1 bg-black/40 rounded-xl border border-white/10 tracking-widest text-white shadow-inner">
+                        <div className="font-mono text-lg font-black px-3 py-1 bg-white rounded-xl border border-slate-200 text-slate-900 shadow-2xs">
                             {formatTime(timeLeft)}
                         </div>
                     </div>
 
-                    <h1 className="text-3xl font-bold text-white mb-2">Order Summary</h1>
+                    <h1 className="text-3xl font-black text-slate-900 mb-2">Order Summary</h1>
 
-                    <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 shadow-xl">
-                        <div className="flex gap-4 mb-6 pb-6 border-b border-theatre-700">
+                    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                        <div className="flex gap-4 mb-6 pb-6 border-b border-slate-100">
                             <img
                                 src={eventImage}
-                                className="w-24 h-24 rounded-lg object-cover"
+                                className="w-24 h-24 rounded-2xl object-cover shadow-2xs"
                                 alt="Show"
                                 crossOrigin="anonymous"
                             />
                             <div>
-                                <h3 className="font-bold text-xl text-white">{eventTitle}</h3>
-                                <div className="text-brand-gold text-sm mb-1">{eventArtist}</div>
-                                <div className="text-slate-400 text-sm flex items-center gap-2">
+                                <h3 className="font-black text-xl text-slate-900">{eventTitle}</h3>
+                                <div className="text-blue-600 font-bold text-sm mb-1">{eventArtist}</div>
+                                <div className="text-slate-500 text-xs font-semibold flex items-center gap-2 mb-1">
                                     {date} • {time}
                                 </div>
-                                <div className="text-slate-400 text-sm">{eventVenue}</div>
+                                <div className="text-slate-500 text-xs font-semibold">{eventVenue}</div>
                             </div>
                         </div>
 
                         <div className="space-y-3 mb-6">
                             <div className="flex justify-between text-sm">
-                                <span className="text-slate-400">Tickets ({selectedSeats.length})</span>
-                                <span className="text-white font-medium">{getTicketSummary()}</span>
+                                <span className="text-slate-500 font-semibold">Tickets ({selectedSeats.length})</span>
+                                <span className="text-slate-900 font-bold">{getTicketSummary()}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-slate-400">Subtotal</span>
-                                <span className="text-white">₹{totalAmount}</span>
+                                <span className="text-slate-500 font-semibold">Subtotal</span>
+                                <span className="text-slate-900 font-bold">₹{totalAmount}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-slate-400">Convenience Fee</span>
-                                <span className="text-white">₹45</span>
+                                <span className="text-slate-500 font-semibold">Convenience Fee</span>
+                                <span className="text-slate-900 font-bold">₹45</span>
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center pt-4 border-t border-theatre-700">
-                            <span className="font-bold text-white">Total Amount</span>
-                            <span className="font-bold text-2xl text-brand-gold">₹{upiAmount}</span>
+                        <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                            <span className="font-extrabold text-slate-900">Total Amount</span>
+                            <span className="font-black text-2xl text-blue-600">₹{upiAmount}</span>
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-r from-purple-900/40 to-slate-800/80 border border-brand-purple/30 rounded-2xl p-4 flex items-start gap-3">
-                        <ShieldCheck className="w-6 h-6 text-brand-gold flex-shrink-0 mt-0.5" />
+                    <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 flex items-start gap-3">
+                        <ShieldCheck className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                         <div>
-                            <h4 className="font-bold text-white text-sm">100% Guaranteed & Secure Booking</h4>
-                            <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                            <h4 className="font-bold text-slate-900 text-sm">100% Guaranteed & Secure Booking</h4>
+                            <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
                                 Your {isGA ? "tickets" : "seats"} are exclusively held for you during this countdown. If any conflict occurs post-payment, you receive an automated, instant full refund.
                             </p>
                         </div>
@@ -438,31 +438,31 @@ export default function PaymentPage() {
 
                 {/* Checkout & Payment Action */}
                 <div className="space-y-6">
-                    <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 shadow-xl space-y-6 animate-in fade-in duration-300">
+                    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6 animate-in fade-in duration-300">
                         <div>
-                            <h2 className="text-xl font-bold text-white mb-1">Contact & Delivery</h2>
-                            <p className="text-xs text-slate-400 mb-4">We'll email your digital tickets immediately after payment confirmation.</p>
+                            <h2 className="text-xl font-black text-slate-900 mb-1">Contact & Delivery</h2>
+                            <p className="text-xs text-slate-500 mb-4">We'll email your digital tickets immediately after payment confirmation.</p>
                             <div className="relative">
-                                <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-500" />
+                                <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
                                 <input 
                                     type="email" 
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="Enter your email address (e.g., aditya@example.com)" 
-                                    className="w-full bg-theatre-900 border border-theatre-600 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple text-sm transition-all" 
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-2xl pl-12 pr-4 py-3 text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:bg-white focus:outline-none text-sm transition-all shadow-2xs" 
                                 />
                             </div>
                         </div>
 
-                        <div className="border-t border-slate-700/60 pt-6">
+                        <div className="border-t border-slate-100 pt-6">
                             <button
                                 onClick={handleRazorpayPayment}
                                 disabled={processing}
-                                className="w-full bg-brand-gold hover:bg-yellow-400 text-black font-bold py-4 rounded-xl shadow-glow transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 text-base"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-md shadow-blue-600/20 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 text-base"
                             >
                                 {processing ? (
                                     <>
-                                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                         Connecting to Gateway...
                                     </>
                                 ) : (
@@ -472,13 +472,13 @@ export default function PaymentPage() {
                                 )}
                             </button>
 
-                            <div className="flex items-center justify-center gap-1.5 mt-4 text-xs text-slate-400">
-                                <ShieldCheck className="w-4 h-4 text-brand-gold" /> Powered by Razorpay
+                            <div className="flex items-center justify-center gap-1.5 mt-4 text-xs font-semibold text-slate-500">
+                                <ShieldCheck className="w-4 h-4 text-blue-600" /> Powered by Razorpay
                             </div>
                         </div>
                     </div>
 
-                    <p className="text-xs text-center text-slate-500">
+                    <p className="text-xs text-center text-slate-400 font-medium">
                         By proceeding, you agree to TicketRush Terms of Service and Privacy Policy.
                     </p>
                 </div>

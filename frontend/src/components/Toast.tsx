@@ -31,27 +31,27 @@ export const useToast = () => {
 const TOAST_STYLES: Record<ToastType, { icon: LucideIcon; iconClass: string; borderClass: string; barClass: string }> = {
     success: {
         icon: CheckCircle2,
-        iconClass: "text-emerald-400",
-        borderClass: "border-emerald-500/40",
-        barClass: "bg-emerald-400",
+        iconClass: "text-emerald-600",
+        borderClass: "border-emerald-200",
+        barClass: "bg-emerald-600",
     },
     error: {
         icon: AlertCircle,
-        iconClass: "text-rose-400",
-        borderClass: "border-rose-500/40",
-        barClass: "bg-rose-400",
+        iconClass: "text-rose-600",
+        borderClass: "border-rose-200",
+        barClass: "bg-rose-600",
     },
     warning: {
         icon: AlertTriangle,
-        iconClass: "text-amber-400",
-        borderClass: "border-amber-500/40",
-        barClass: "bg-amber-400",
+        iconClass: "text-amber-600",
+        borderClass: "border-amber-200",
+        barClass: "bg-amber-600",
     },
     info: {
         icon: Info,
-        iconClass: "text-brand-gold",
-        borderClass: "border-brand-purple/40",
-        barClass: "bg-brand-purple",
+        iconClass: "text-blue-600",
+        borderClass: "border-blue-200",
+        barClass: "bg-blue-600",
     },
 };
 
@@ -89,15 +89,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                         <div
                             key={t.id}
                             role="status"
-                            className={`pointer-events-auto relative overflow-hidden rounded-xl border ${styles.borderClass} bg-theatre-800/95 backdrop-blur-md shadow-2xl p-4 pr-10 animate-[toast-in_0.25s_ease-out]`}
+                            className={`pointer-events-auto relative overflow-hidden rounded-xl border ${styles.borderClass} bg-white/95 backdrop-blur-md shadow-xl p-4 pr-10 animate-[toast-in_0.25s_ease-out]`}
                         >
                             <div className="flex items-start gap-3">
                                 <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${styles.iconClass}`} />
                                 <div className="min-w-0">
                                     {t.title && (
-                                        <div className="text-sm font-bold text-white leading-snug">{t.title}</div>
+                                        <div className="text-sm font-bold text-slate-900 leading-snug">{t.title}</div>
                                     )}
-                                    <div className={`text-xs text-slate-300 leading-relaxed ${t.title ? "mt-1" : ""}`}>
+                                    <div className={`text-xs text-slate-600 leading-relaxed ${t.title ? "mt-1" : ""}`}>
                                         {t.message}
                                     </div>
                                 </div>
@@ -105,7 +105,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
                             <button
                                 onClick={() => dismiss(t.id)}
-                                className="absolute top-3 right-3 p-0.5 text-slate-500 hover:text-white transition-colors"
+                                className="absolute top-3 right-3 p-0.5 text-slate-400 hover:text-slate-700 transition-colors"
                                 aria-label="Dismiss notification"
                             >
                                 <X className="w-4 h-4" />

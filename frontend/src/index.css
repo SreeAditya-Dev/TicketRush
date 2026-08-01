@@ -4,11 +4,11 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
   }
   
   body {
-    @apply bg-theatre-900 text-slate-50 antialiased;
+    @apply bg-[#f4f6f9] text-slate-900 antialiased;
   }
 
   /* Custom Scrollbar */
@@ -16,13 +16,13 @@
     width: 10px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-theatre-900;
+    @apply bg-[#f4f6f9];
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-theatre-700 rounded-full border-2 border-theatre-900;
+    @apply bg-slate-300 rounded-full border-2 border-[#f4f6f9];
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-theatre-600;
+    @apply bg-slate-400;
   }
 }
 

@@ -134,11 +134,11 @@ export default function BookingPage() {
         return (
             <div className="mb-8 relative">
                 <div className="flex items-center gap-3 mb-4 px-4">
-                    <span className="text-xs font-bold text-brand-gold bg-brand-gold/10 px-2 py-1 rounded tracking-wider uppercase">
+                    <span className="text-xs font-extrabold text-blue-600 bg-blue-50 border border-blue-200/60 px-2.5 py-1 rounded-lg tracking-wider uppercase">
                         {title}
                     </span>
-                    <span className="text-xs text-slate-400 font-medium">₹{price}</span>
-                    <div className="h-px bg-theatre-700 flex-grow"></div>
+                    <span className="text-xs font-bold text-slate-700">₹{price}</span>
+                    <div className="h-px bg-slate-200 flex-grow"></div>
                 </div>
                 
                 <div className="grid grid-cols-10 gap-y-3 gap-x-2 max-w-lg mx-auto px-4">
@@ -147,9 +147,9 @@ export default function BookingPage() {
                         skeletonSeats.map((i) => (
                             <div
                                 key={`skeleton-${i}`}
-                                className="relative w-full pt-[80%] rounded-t-lg bg-theatre-700/30 animate-pulse"
+                                className="relative w-full pt-[80%] rounded-t-lg bg-slate-200 animate-pulse"
                             >
-                                <div className="absolute bottom-1 left-0.5 right-0.5 h-1 rounded-full bg-black/20"></div>
+                                <div className="absolute bottom-1 left-0.5 right-0.5 h-1 rounded-full bg-slate-300"></div>
                             </div>
                         ))
                     ) : (
@@ -168,19 +168,19 @@ export default function BookingPage() {
                                     relative group w-full pt-[80%] rounded-t-lg transition-all duration-300
                                     flex items-center justify-center
                                     ${isBooked 
-                                        ? "bg-theatre-700/50 cursor-not-allowed opacity-40" 
+                                        ? "bg-slate-200 border border-slate-300 cursor-not-allowed opacity-50" 
                                         : isHeldByOther
-                                            ? "bg-amber-600/70 border border-amber-500 cursor-not-allowed animate-pulse"
+                                            ? "bg-amber-100 border border-amber-400 cursor-not-allowed animate-pulse"
                                             : isSelected 
-                                                ? "bg-brand-gold shadow-glow scale-105 z-10" 
-                                                : "bg-theatre-700 hover:bg-brand-purple/50 hover:shadow-glow-purple border border-theatre-600 hover:border-brand-purple"
+                                                ? "bg-blue-600 border border-blue-700 shadow-md shadow-blue-600/25 scale-105 z-10" 
+                                                : "bg-white hover:bg-blue-50 border border-slate-300 hover:border-blue-400 shadow-2xs"
                                     }
                                 `}
                             >
                                 {/* Seat Armrests Effect */}
-                                <div className={`absolute bottom-1 left-0.5 right-0.5 h-1 rounded-full ${isSelected ? 'bg-black/20' : 'bg-black/40'}`}></div>
+                                <div className={`absolute bottom-1 left-0.5 right-0.5 h-1 rounded-full ${isSelected ? 'bg-white/30' : 'bg-slate-300'}`}></div>
                                 
-                                <span className={`text-[9px] font-bold ${isSelected ? "text-black" : "text-slate-400 group-hover:text-white"}`}>
+                                <span className={`text-[9px] font-bold ${isSelected ? "text-white" : isBooked ? "text-slate-400" : "text-slate-600 group-hover:text-blue-600"}`}>
                                     {seat.code.replace("S", "").replace(/^0+/, "")}
                                 </span>
                             </button>
@@ -200,7 +200,7 @@ export default function BookingPage() {
             startRow: 1,
             endRow: 2,
             tag: "BEST EXPERIENCE",
-            badgeColor: "bg-brand-gold/20 text-brand-gold border-brand-gold/40",
+            badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
             description: "Exclusive frontline crowd access closest to the main stage, dedicated VIP entrance gate & private bar lounge access."
         },
         {
@@ -210,7 +210,7 @@ export default function BookingPage() {
             startRow: 3,
             endRow: 6,
             tag: "PRIORITY ENTRY",
-            badgeColor: "bg-purple-500/20 text-purple-300 border-purple-500/40",
+            badgeColor: "bg-purple-50 text-purple-700 border-purple-200",
             description: "Priority stadium floor entry 1.5 hours before regular ticket holders, prime arena standing views."
         },
         {
@@ -220,7 +220,7 @@ export default function BookingPage() {
             startRow: 7,
             endRow: 10,
             tag: "STANDARD ENTRY",
-            badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+            badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
             description: "Standard stadium ground floor access. Experience the unmatched high-energy atmosphere with the festival crowd."
         }
     ];
@@ -285,16 +285,16 @@ export default function BookingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-theatre-900 pb-32 text-slate-200 font-sans selection:bg-brand-purple selection:text-white">
+        <div className="min-h-screen bg-[#f4f6f9] pb-32 text-slate-700 font-sans selection:bg-blue-600 selection:text-white">
             {/* Top Bar */}
-            <header className="bg-theatre-800/80 backdrop-blur-xl border-b border-theatre-700 px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
+            <header className="bg-white/90 backdrop-blur-xl border-b border-slate-200 px-4 py-3 sticky top-0 z-30 flex items-center justify-between shadow-2xs">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => navigate(-1)} className="p-2 hover:bg-theatre-700 rounded-full transition-colors text-slate-300 hover:text-white">
+                    <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-600 hover:text-slate-900">
                         <ChevronLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-base font-bold text-white tracking-tight">{event?.title || "Event"}</h1>
-                        <p className="text-xs text-brand-gold flex items-center gap-1">
+                        <h1 className="text-base font-black text-slate-900 tracking-tight">{event?.title || "Event"}</h1>
+                        <p className="text-xs font-bold text-blue-600 flex items-center gap-1">
                             {event?.venue || "Venue"}
                         </p>
                     </div>
@@ -302,7 +302,7 @@ export default function BookingPage() {
             </header>
 
             {/* Date & Time Selector */}
-            <div className="bg-theatre-800 border-b border-theatre-700 pt-4 pb-2">
+            <div className="bg-white border-b border-slate-200 pt-4 pb-2 shadow-2xs">
                 <div className="flex gap-3 overflow-x-auto px-4 pb-4 no-scrollbar">
                     {DATES.map((date) => (
                         <button
@@ -311,26 +311,26 @@ export default function BookingPage() {
                             className={`
                                 flex-shrink-0 px-4 py-3 rounded-xl flex flex-col items-center gap-1 transition-all border
                                 ${selectedDate === date
-                                    ? "bg-brand-purple border-brand-purple text-white shadow-glow-purple"
-                                    : "bg-theatre-700 border-theatre-600 text-slate-400 hover:bg-theatre-600 hover:border-theatre-500"
+                                    ? "bg-blue-600 border-blue-600 text-white shadow-xs"
+                                    : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900"
                                 }
                             `}
                         >
                             <Calendar className="w-3.5 h-3.5 opacity-70" />
-                            <span className="text-xs font-semibold whitespace-nowrap">{date}</span>
+                            <span className="text-xs font-bold whitespace-nowrap">{date}</span>
                         </button>
                     ))}
                 </div>
-                <div className="flex gap-2 overflow-x-auto px-4 pb-3 no-scrollbar border-t border-theatre-700/50 pt-3">
+                <div className="flex gap-2 overflow-x-auto px-4 pb-3 no-scrollbar border-t border-slate-100 pt-3">
                     {TIMES.map((time) => (
                         <button
                             key={time}
                             onClick={() => setSelectedTime(time)}
                             className={`
-                                flex-shrink-0 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all flex items-center gap-1.5
+                                flex-shrink-0 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all flex items-center gap-1.5
                                 ${selectedTime === time
-                                    ? "bg-brand-gold text-black border-brand-gold font-bold shadow-glow"
-                                    : "border-theatre-600 text-slate-400 hover:border-theatre-500 hover:text-slate-200"
+                                    ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900"
                                 }
                             `}
                         >
@@ -345,21 +345,21 @@ export default function BookingPage() {
                 <div className="max-w-3xl mx-auto">
                     {/* Theatre Screen */}
                     <div className="relative pt-10 pb-6 overflow-hidden">
-                        <div className="w-3/4 h-8 mx-auto bg-gradient-to-b from-white/10 to-transparent rounded-[50%] blur-xl opacity-30 transform -translate-y-4"></div>
+                        <div className="w-3/4 h-8 mx-auto bg-blue-600/5 rounded-[50%] blur-md opacity-50 transform -translate-y-4"></div>
                         <svg 
                             viewBox="0 0 300 40" 
-                            className="w-2/3 mx-auto mb-8" 
-                            style={{ filter: 'drop-shadow(0 4px 12px rgba(148, 163, 184, 0.3))' }}
+                            className="w-2/3 mx-auto mb-6" 
+                            style={{ filter: 'drop-shadow(0 4px 8px rgba(148, 163, 184, 0.2))' }}
                         >
                             <path 
                                 d="M 10 30 Q 150 5, 290 30" 
                                 fill="none" 
-                                stroke="rgb(100, 116, 139)" 
+                                stroke="rgb(37, 99, 235)" 
                                 strokeWidth="3" 
                                 strokeLinecap="round"
                             />
                         </svg>
-                        <div className="text-center text-[10px] text-slate-500 uppercase tracking-[0.2em] font-medium">Screen This Way</div>
+                        <div className="text-center text-[10px] text-slate-400 uppercase tracking-[0.2em] font-bold">Screen This Way</div>
                     </div>
 
                     {/* Seat Layout */}
@@ -370,39 +370,39 @@ export default function BookingPage() {
                     </div>
 
                     {/* Legend */}
-                    <div className="flex flex-wrap justify-center gap-6 mt-8 py-4 border-t border-theatre-700/50 mx-6">
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="w-5 h-5 rounded-t-md bg-theatre-700 border border-theatre-600"></div>
-                            <span className="text-[10px] text-slate-500">Available</span>
+                    <div className="flex flex-wrap justify-center gap-6 mt-8 py-4 border-t border-slate-200 mx-6">
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-white border border-slate-300 shadow-2xs"></div>
+                            <span className="text-xs font-medium text-slate-600">Available</span>
                         </div>
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="w-5 h-5 rounded-t-md bg-brand-gold shadow-glow"></div>
-                            <span className="text-[10px] text-slate-500">Selected</span>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-blue-600 border border-blue-700 shadow-xs"></div>
+                            <span className="text-xs font-medium text-slate-600">Selected</span>
                         </div>
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="w-5 h-5 rounded-t-md bg-amber-600/70 border border-amber-500 animate-pulse"></div>
-                            <span className="text-[10px] text-slate-500">In Checkout</span>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-amber-100 border border-amber-400 animate-pulse"></div>
+                            <span className="text-xs font-medium text-slate-600">In Checkout</span>
                         </div>
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="w-5 h-5 rounded-t-md bg-theatre-700/50 opacity-50"></div>
-                            <span className="text-[10px] text-slate-500">Sold</span>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-slate-200 border border-slate-300 opacity-60"></div>
+                            <span className="text-xs font-medium text-slate-600">Sold</span>
                         </div>
                     </div>
                 </div>
             ) : (
                 <div className="max-w-3xl mx-auto px-4 py-8">
-                    <div className="bg-gradient-to-r from-brand-purple/20 via-theatre-800 to-brand-gold/15 border border-theatre-700 rounded-2xl p-6 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 mb-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-brand-purple/20 border border-brand-purple/40 flex items-center justify-center text-brand-purple flex-shrink-0">
-                                <Ticket className="w-6 h-6 animate-pulse-slow" />
+                            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 flex-shrink-0">
+                                <Ticket className="w-6 h-6" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-xs font-extrabold text-brand-gold bg-brand-gold/10 px-2 py-0.5 rounded tracking-wider uppercase">General Admission Event</span>
-                                    <span className="text-[11px] text-slate-400 flex items-center gap-1"><Users className="w-3.5 h-3.5 text-slate-400" /> Open Floor / No Assigned Seating</span>
+                                    <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded tracking-wider uppercase">General Admission Event</span>
+                                    <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1"><Users className="w-3.5 h-3.5 text-blue-600" /> Open Floor / No Assigned Seating</span>
                                 </div>
-                                <h2 className="text-lg md:text-xl font-bold text-white">Select Your Ticket Categories</h2>
-                                <p className="text-xs text-slate-400">Choose your admission tiers below. Tickets grant entry to designated arena floor zones.</p>
+                                <h2 className="text-lg md:text-xl font-black text-slate-900">Select Your Ticket Categories</h2>
+                                <p className="text-xs text-slate-500">Choose your admission tiers below. Tickets grant entry to designated arena floor zones.</p>
                             </div>
                         </div>
                     </div>
@@ -412,22 +412,22 @@ export default function BookingPage() {
                             {gaTiers.map((tier) => (
                                 <div 
                                     key={tier.id}
-                                    className="bg-theatre-800/80 backdrop-blur-md border border-theatre-700/80 rounded-2xl p-5 md:p-6 animate-pulse flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+                                    className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 animate-pulse flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
                                 >
                                     <div className="space-y-3 max-w-lg flex-1">
                                         <div className="flex items-center gap-2">
-                                            <div className="h-5 w-24 bg-theatre-700/50 rounded-full"></div>
-                                            <div className="h-4 w-16 bg-theatre-700/50 rounded"></div>
+                                            <div className="h-5 w-24 bg-slate-200 rounded-full"></div>
+                                            <div className="h-4 w-16 bg-slate-200 rounded"></div>
                                         </div>
-                                        <div className="h-6 w-3/4 bg-theatre-700/50 rounded"></div>
+                                        <div className="h-6 w-3/4 bg-slate-200 rounded"></div>
                                         <div className="space-y-2">
-                                            <div className="h-3 w-full bg-theatre-700/50 rounded"></div>
-                                            <div className="h-3 w-5/6 bg-theatre-700/50 rounded"></div>
+                                            <div className="h-3 w-full bg-slate-200 rounded"></div>
+                                            <div className="h-3 w-5/6 bg-slate-200 rounded"></div>
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-3">
-                                        <div className="h-8 w-20 bg-theatre-700/50 rounded"></div>
-                                        <div className="h-10 w-32 bg-theatre-700/50 rounded-xl"></div>
+                                        <div className="h-8 w-20 bg-slate-200 rounded"></div>
+                                        <div className="h-10 w-32 bg-slate-200 rounded-xl"></div>
                                     </div>
                                 </div>
                             ))}
@@ -442,52 +442,52 @@ export default function BookingPage() {
                                 return (
                                     <div 
                                         key={tier.id}
-                                        className={`bg-theatre-800/80 backdrop-blur-md border ${count > 0 ? 'border-brand-purple shadow-[0_4px_20px_rgba(124,58,237,0.15)] bg-theatre-800' : 'border-theatre-700/80 hover:border-theatre-600'} rounded-2xl p-5 md:p-6 transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6`}
+                                        className={`bg-white border ${count > 0 ? 'border-blue-500 shadow-md ring-1 ring-blue-500/20' : 'border-slate-200 hover:border-blue-300'} rounded-2xl p-5 md:p-6 transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6`}
                                     >
                                         <div className="space-y-2 max-w-lg">
                                             <div className="flex items-center gap-2">
-                                                <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${tier.badgeColor}`}>
+                                                <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-md uppercase tracking-wider border ${tier.badgeColor}`}>
                                                     {tier.tag}
                                                 </span>
                                                 {isSoldOut ? (
-                                                    <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded uppercase">Sold Out</span>
+                                                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded uppercase">Sold Out</span>
                                                 ) : available <= 5 ? (
-                                                    <span className="text-[10px] font-semibold text-amber-400">🔥 Only {available} passes left!</span>
+                                                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">🔥 Only {available} left!</span>
                                                 ) : (
-                                                    <span className="text-[10px] font-medium text-emerald-400">● Available</span>
+                                                    <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">● Available</span>
                                                 )}
                                             </div>
-                                            <h3 className="text-xl font-extrabold text-white">{tier.name}</h3>
-                                            <p className="text-xs text-slate-300 leading-relaxed">{tier.description}</p>
+                                            <h3 className="text-xl font-black text-slate-900">{tier.name}</h3>
+                                            <p className="text-xs text-slate-600 leading-relaxed">{tier.description}</p>
                                         </div>
 
-                                        <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto border-t sm:border-t-0 border-theatre-700/60 pt-4 sm:pt-0 gap-4">
+                                        <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto border-t sm:border-t-0 border-slate-100 pt-4 sm:pt-0 gap-4">
                                             <div className="text-left sm:text-right">
-                                                <span className="text-[10px] text-slate-400 block uppercase font-medium">Price per ticket</span>
-                                                <span className="text-2xl font-black text-brand-gold">₹{tier.price}</span>
+                                                <span className="text-[10px] text-slate-400 block uppercase font-bold">Price per ticket</span>
+                                                <span className="text-2xl font-black text-slate-900">₹{tier.price}</span>
                                             </div>
 
                                             {isSoldOut ? (
-                                                <button disabled className="px-4 py-2 rounded-xl bg-theatre-700 text-slate-500 text-xs font-bold cursor-not-allowed">
+                                                <button disabled className="px-4 py-2 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed border border-slate-200">
                                                     Unavailable
                                                 </button>
                                             ) : (
-                                                <div className="flex items-center gap-3 bg-theatre-900/90 border border-theatre-600 rounded-xl p-1.5 shadow-inner">
+                                                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-1.5 shadow-2xs">
                                                     <button
                                                         onClick={() => removeGATicket(tier.startRow, tier.endRow)}
                                                         disabled={count === 0}
-                                                        className="w-8 h-8 rounded-lg bg-theatre-800 hover:bg-theatre-700 disabled:opacity-30 disabled:hover:bg-theatre-800 text-slate-200 flex items-center justify-center transition-colors active:scale-90"
+                                                        className="w-8 h-8 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 flex items-center justify-center transition-colors active:scale-90 shadow-2xs"
                                                         title="Remove ticket"
                                                     >
                                                         <Minus className="w-4 h-4" />
                                                     </button>
-                                                    <span className="w-6 text-center font-extrabold text-white text-base font-mono">
+                                                    <span className="w-6 text-center font-black text-slate-900 text-base font-mono">
                                                         {count}
                                                     </span>
                                                     <button
                                                         onClick={() => addGATicket(tier.startRow, tier.endRow)}
                                                         disabled={available <= count}
-                                                        className="w-8 h-8 rounded-lg bg-brand-purple hover:bg-violet-500 disabled:opacity-30 disabled:hover:bg-brand-purple text-white flex items-center justify-center transition-all shadow-md shadow-brand-purple/30 active:scale-90"
+                                                        className="w-8 h-8 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-blue-600 text-white flex items-center justify-center transition-all shadow-sm active:scale-90"
                                                         title="Add ticket"
                                                     >
                                                         <Plus className="w-4 h-4" />
@@ -502,49 +502,36 @@ export default function BookingPage() {
                     )}
 
                     {/* Trust and Admission Guidelines Info Bar */}
-                    <div className="bg-theatre-800/50 border border-theatre-700/60 rounded-xl p-4 flex items-center gap-3 text-xs text-slate-300">
-                        <ShieldCheck className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                    <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-4 flex items-center gap-3 text-xs text-slate-700">
+                        <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0" />
                         <span><strong>100% Guaranteed Admission:</strong> Tickets are electronically issued instantly after payment. Gates open 2 hours prior to showtime for standing floor security check-ins.</span>
                     </div>
                 </div>
             )}
 
-                        {/* Sticky Footer */}
-
-                        {selectedSeats.length > 0 && (
-
-                            <div className="fixed bottom-4 left-4 right-4 max-w-3xl mx-auto z-40">
-
-                                <div className="bg-theatre-800/90 backdrop-blur-lg border border-theatre-600 rounded-2xl p-4 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-10 fade-in duration-300">
-
-                                    <div>
-
-                                        <div className="text-xs text-slate-400 mb-0.5">Total Amount</div>
-
-                                        <div className="text-xl font-bold text-white flex items-baseline gap-1">
-
-                                            <span className="text-sm text-brand-gold">₹</span>
-
-                                            {calculateTotal()}
-
-                                        </div>
-
-                                        <div className="text-[10px] text-slate-500 font-medium">{selectedSeats.length} Tickets Selected</div>
-
-                                    </div>
-
-                                    <button
-                                        onClick={handleProceed}
-                                        disabled={holding}
-                                        className="bg-brand-purple hover:bg-violet-500 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-brand-purple/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                    >
-                                        {holding ? "Reserving..." : "Proceed"} <ChevronLeft className="w-4 h-4 rotate-180" />
-                                    </button>
-                                </div>
-
+            {/* Sticky Footer */}
+            {selectedSeats.length > 0 && (
+                <div className="fixed bottom-4 left-4 right-4 max-w-3xl mx-auto z-40">
+                    <div className="bg-white/95 backdrop-blur-lg border border-slate-200 rounded-2xl p-4 shadow-xl flex items-center justify-between animate-in slide-in-from-bottom-10 fade-in duration-300">
+                        <div>
+                            <div className="text-xs font-semibold text-slate-500 mb-0.5">Total Amount</div>
+                            <div className="text-2xl font-black text-slate-900 flex items-baseline gap-1">
+                                <span className="text-sm font-bold text-blue-600">₹</span>
+                                {calculateTotal()}
                             </div>
+                            <div className="text-xs text-blue-600 font-bold">{selectedSeats.length} Tickets Selected</div>
+                        </div>
 
-                        )}
+                        <button
+                            onClick={handleProceed}
+                            disabled={holding}
+                            className="bg-slate-900 hover:bg-blue-600 disabled:opacity-50 text-white font-bold py-3.5 px-8 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2 text-sm"
+                        >
+                            {holding ? "Reserving..." : "Proceed to Checkout"} <ChevronLeft className="w-4 h-4 rotate-180" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

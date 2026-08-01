@@ -336,7 +336,19 @@ export default function BookingPage() {
                     {/* Theatre Screen */}
                     <div className="relative pt-10 pb-6 overflow-hidden">
                         <div className="w-3/4 h-8 mx-auto bg-gradient-to-b from-white/10 to-transparent rounded-[50%] blur-xl opacity-30 transform -translate-y-4"></div>
-                        <div className="w-2/3 h-1.5 mx-auto bg-slate-500 rounded-full shadow-screen mb-8"></div>
+                        <svg 
+                            viewBox="0 0 300 40" 
+                            className="w-2/3 mx-auto mb-8" 
+                            style={{ filter: 'drop-shadow(0 4px 12px rgba(148, 163, 184, 0.3))' }}
+                        >
+                            <path 
+                                d="M 10 30 Q 150 5, 290 30" 
+                                fill="none" 
+                                stroke="rgb(100, 116, 139)" 
+                                strokeWidth="3" 
+                                strokeLinecap="round"
+                            />
+                        </svg>
                         <div className="text-center text-[10px] text-slate-500 uppercase tracking-[0.2em] font-medium">Screen This Way</div>
                     </div>
 

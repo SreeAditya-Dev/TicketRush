@@ -145,6 +145,40 @@ bookingRouter.get("/seats", async (req, res) => {
   res.json({ seats: seatsWithStatus });
 });
 
+// New endpoint: Quick availability check (optimized for load tests)
+bookingRouter.get("/availability", async (req, res) => {
+  const eventId = typeof req.query.eventId === 'string' ? req.query.eventId : '';
+  const date = typeof req.query.date === 'string' ? req.query.date : '';
+  const time = typeof req.query.time === 'string' ? req.query.time : '';
+
+  if (!eventId || !date || !time) {
+    return res.status(400).json({ message: "eventId, date, and time are required" });
+  }
+
+  try {
+    // Count total bookings
+    const bookingCount = await prisma.booking.count({
+      where: { eventId, date, time }
+    });
+
+    // Get total seats
+    const totalSeats = await prisma.seat.count();
+    const availableSeats = totalSeats - bookingCount;
+    const soldOut = availableSeats <= 0;
+
+    return res.json({ 
+      totalSeats,
+      bookedSeats: bookingCount,
+      availableSeats: Math.max(0, availableSeats),
+      soldOut,
+      availabilityPercentage: ((availableSeats / totalSeats) * 100).toFixed(2)
+    });
+  } catch (error) {
+    console.error("Error checking availability:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 bookingRouter.post("/hold-seats", async (req, res) => {
   try {
     const { seatCodes, eventId, date, time, userId = "user_guest" } = req.body || {};
@@ -218,6 +252,24 @@ export const executeSeatBooking = async (
   strategy: Strategy
 ): Promise<BookingResult> => {
   bookingAttempts.inc();
+  
+  // Early availability check to reduce database load
+  const seat = await prisma.seat.findUnique({ where: { code: seatCode } });
+  if (!seat) {
+    bookingFailedOversold.inc();
+    return { ok: false, status: 404, message: "Seat not found" };
+  }
+
+  // Quick check if already booked (reduces lock contention)
+  const existingBooking = await prisma.booking.findFirst({
+    where: { seatId: seat.id, eventId, date, time }
+  });
+  
+  if (existingBooking) {
+    bookingFailedOversold.inc();
+    return { ok: false, status: 409, message: "Seat already booked for this time" };
+  }
+
   const lockKey = `${config.seatLockPrefix}${seatCode}:${eventId}:${date}:${time}`;
   let hasLock = false;
 

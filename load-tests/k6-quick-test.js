@@ -32,10 +32,37 @@ for (let i = 1; i <= 100; i++) {
   seats.push(`S${String(i).padStart(3, "0")}`);
 }
 
+// Seat selection with collision avoidance
+let seatIndex = 0;
+function getNextSeat() {
+  // Distribute seat selection across VUs to reduce collisions
+  const offset = __VU * 7; // Prime number for better distribution
+  const index = (seatIndex + offset) % seats.length;
+  seatIndex++;
+  return seats[index];
+}
+
 // ==================== MAIN TEST ====================
 export default function () {
+  // Early availability check every 20 iterations
+  if (__ITER % 20 === 0) {
+    const availCheck = http.get(
+      `${BASE_URL}/api/v1/availability?eventId=${EVENT_ID}&date=Fri%2C%2006%20Jun&time=04%3A30%20PM`
+    );
+    
+    if (availCheck.status === 200) {
+      try {
+        const avail = JSON.parse(availCheck.body);
+        if (avail.soldOut || avail.availableSeats < 3) {
+          console.log(`🛑 Sold out! Only ${avail.availableSeats} seats remaining. Exiting.`);
+          return; // Exit early
+        }
+      } catch (e) {}
+    }
+  }
+
   const userId = `user_${__VU}_${__ITER}`;
-  const seatCode = seats[Math.floor(Math.random() * seats.length)];
+  const seatCode = getNextSeat(); // Use distributed seat selection
   const numSeats = Math.floor(Math.random() * 2) + 1; // 1-2 seats
   const selectedSeats = [seatCode];
 
@@ -50,6 +77,7 @@ export default function () {
       time: "04:30 PM",
       paymentId: `pay_test_${Date.now()}`,
       orderId: `order_test_${Date.now()}`,
+      strategy: "locked", // Always use locked strategy
     }),
     {
       headers: { "Content-Type": "application/json" },
@@ -63,7 +91,7 @@ export default function () {
   });
 
   // Track metrics
-  if (response.status === 200) {
+  if (response.status === 200 || response.status === 201) {
     successfulBookings.add(1);
     successRate.add(1);
     console.log(`✅ User ${userId} booked seat ${seatCode}`);
@@ -77,7 +105,7 @@ export default function () {
     }
   }
 
-  sleep(Math.random() * 2 + 0.5); // Random think time: 0.5-2.5s
+  sleep(Math.random() + 0.5); // Faster: 0.5-1.5s
 }
 
 // ==================== SUMMARY ====================

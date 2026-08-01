@@ -21,6 +21,28 @@ export const getSeats = async (
   return response.data.seats;
 };
 
+import { EventData } from "./data/events";
+
+export const fetchEvents = async (): Promise<EventData[]> => {
+  try {
+    const response = await api.get<{ events: EventData[] }>("/events");
+    return response.data.events || [];
+  } catch (error) {
+    console.error("Error fetching events from API:", error);
+    return [];
+  }
+};
+
+export const fetchEventById = async (id: string): Promise<EventData | null> => {
+  try {
+    const response = await api.get<{ event: EventData | null }>(`/events/${id}`);
+    return response.data.event || null;
+  } catch (error) {
+    console.error("Error fetching event by id from API:", error);
+    return null;
+  }
+};
+
 export type BookSeatResult =
   | { ok: true; message: string; booking?: any }
   | { ok: false; message: string };
@@ -56,5 +78,110 @@ export const bookSeat = async (
       return { ok: false, message: msg };
     }
     return { ok: false, message: String(error) };
+  }
+};
+
+export interface PaymentOrderResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+}
+
+export const createRazorpayOrder = async (
+  amount: number,
+  eventId: string,
+  seats: string[],
+  metadata: Record<string, any> = {}
+): Promise<{ ok: true; data: PaymentOrderResponse } | { ok: false; message: string }> => {
+  try {
+    const response = await api.post<PaymentOrderResponse>("/payment/create-order", {
+      amount,
+      eventId,
+      seats,
+      ...metadata,
+    });
+    return { ok: true, data: response.data };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      const msg =
+        typeof error.response?.data?.message === "string"
+          ? error.response.data.message
+          : error.message;
+      return { ok: false, message: msg };
+    }
+    return { ok: false, message: String(error) };
+  }
+};
+
+export interface VerifyPaymentPayload {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+  seatCodes: string[];
+  userId: string;
+  email: string;
+  eventId: string;
+  eventTitle: string;
+  eventArtist: string;
+  eventVenue: string;
+  date: string;
+  time: string;
+  totalAmount: number;
+}
+
+export const verifyAndConfirmBooking = async (
+  payload: VerifyPaymentPayload
+): Promise<{ ok: true; message: string; emailSent?: boolean; bookings?: any[] } | { ok: false; message: string }> => {
+  try {
+    const response = await api.post("/payment/verify-and-book", payload);
+    return {
+      ok: true,
+      message: response.data?.message || "Booking confirmed",
+      emailSent: response.data?.emailSent,
+      bookings: response.data?.bookings,
+    };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      const msg =
+        typeof error.response?.data?.message === "string"
+          ? error.response.data.message
+          : error.message;
+      return { ok: false, message: msg };
+    }
+    return { ok: false, message: String(error) };
+  }
+};
+
+export const holdSeats = async (
+  seatCodes: string[],
+  eventId: string,
+  date: string,
+  time: string,
+  userId: string
+): Promise<{ ok: boolean; message: string; expiresIn?: number }> => {
+  try {
+    const response = await api.post("/hold-seats", { seatCodes, eventId, date, time, userId });
+    return { ok: true, message: response.data?.message || "Held", expiresIn: response.data?.expiresIn || 300 };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      const msg = typeof error.response?.data?.message === "string" ? error.response.data.message : error.message;
+      return { ok: false, message: msg };
+    }
+    return { ok: false, message: String(error) };
+  }
+};
+
+export const releaseHolds = async (
+  seatCodes: string[],
+  eventId: string,
+  date: string,
+  time: string,
+  userId: string
+): Promise<void> => {
+  try {
+    await api.post("/release-holds", { seatCodes, eventId, date, time, userId });
+  } catch (error) {
+    console.error("Failed to release holds:", error);
   }
 };

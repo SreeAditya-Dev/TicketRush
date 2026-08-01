@@ -27,13 +27,17 @@ export default function () {
 
   const res = http.post(
     `${BASE_URL}/api/v1/book-seat`,
-    JSON.stringify({ seatCode, userId, strategy: STRATEGY }),
+    JSON.stringify({ seatCode, userId, strategy: STRATEGY, eventId: "event-1", date: "2025-01-01", time: "20:00" }),
     { headers: { "Content-Type": "application/json" } }
   );
 
-  check(res, {
+  const checkRes = check(res, {
     "status is 2xx or known error": (r) => r.status >= 200 && r.status < 500
   });
+
+  if (!checkRes || res.status >= 400) {
+      console.log(`Failed: ${res.status} ${res.body}`);
+  }
 
   sleep(0.1);
 }

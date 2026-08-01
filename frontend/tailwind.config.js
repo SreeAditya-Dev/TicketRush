@@ -5,21 +5,21 @@ export default {
     extend: {
       colors: {
         theatre: {
-          900: "#0b0c15", // Deepest background
-          800: "#151725", // Surfaces
-          700: "#23263a", // Borders
-          600: "#343a55", // Light Border/Hover
-          500: "#4b5275", // Lighter Hover
+          900: "#f4f6f9", // Deepest background - Cool Sleek Slate
+          800: "#ffffff", // Surfaces - Crisp Pure White
+          700: "#e2e8f0", // Borders - Clean Slate
+          600: "#cbd5e1", // Hover border / secondary control
+          500: "#64748b", // Muted interactive text
         },
         brand: {
-          gold: "#f5c518",
-          purple: "#8b5cf6",
+          gold: "#d97706", // Refined Amber Gold
+          purple: "#2563eb", // Sleek Cobalt Blue (replaces neon purple)
         }
       },
       boxShadow: {
-        'glow': '0 0 15px rgba(245, 197, 24, 0.5)',
-        'glow-purple': '0 0 15px rgba(139, 92, 246, 0.5)',
-        'screen': '0 -20px 60px -10px rgba(255, 255, 255, 0.1)',
+        'glow': '0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04)',
+        'glow-purple': '0 10px 25px -3px rgba(37, 99, 235, 0.25), 0 4px 10px -2px rgba(37, 99, 235, 0.12)',
+        'screen': '0 -20px 40px -10px rgba(0, 0, 0, 0.08)',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

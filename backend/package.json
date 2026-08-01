@@ -16,7 +16,9 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "ioredis": "^5.4.1",
-    "prom-client": "^14.2.0"
+    "prom-client": "^14.2.0",
+    "razorpay": "^2.9.8",
+    "resend": "^6.18.1"
   },
   "devDependencies": {
     "@types/cors": "2.8.17",

@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { bookingRouter } from "./routes/booking";
+import { paymentRouter } from "./routes/payment";
 import { metricsRegistry } from "./metrics";
 import { config } from "./config";
 import { prisma } from "./prisma";
@@ -21,6 +22,7 @@ app.get("/api/v1/health", (_req, res) => {
 });
 
 app.use("/api/v1", bookingRouter);
+app.use("/api/v1", paymentRouter);
 
 app.get("/metrics", async (_req, res) => {
   const metrics = await metricsRegistry.metrics();

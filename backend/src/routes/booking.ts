@@ -5,11 +5,11 @@ import { prisma } from "../prisma";
 import { acquireLock, releaseLock } from "../redis";
 import { config } from "../config";
 
-type Strategy = "naive" | "locked";
+export type Strategy = "naive" | "locked";
 
-type Booking = Awaited<ReturnType<PrismaClient["booking"]["create"]>>;
+export type Booking = Awaited<ReturnType<PrismaClient["booking"]["create"]>>;
 
-type BookingResult =
+export type BookingResult =
   | { ok: true; booking: Booking }
   | { ok: false; status: number; message: string };
 
@@ -135,6 +135,46 @@ bookingRouter.get("/seats", async (req, res) => {
   res.json({ seats: seatsWithStatus });
 });
 
+export const executeSeatBooking = async (
+  seatCode: string,
+  userId: string,
+  eventId: string,
+  date: string,
+  time: string,
+  strategy: Strategy
+): Promise<BookingResult> => {
+  bookingAttempts.inc();
+  const lockKey = `${config.seatLockPrefix}${seatCode}:${eventId}:${date}:${time}`;
+  let hasLock = false;
+
+  try {
+    if (strategy === "locked") {
+      hasLock = await acquireLock(lockKey, config.lockTtlSeconds);
+      if (!hasLock) {
+        bookingFailedOversold.inc();
+        return { ok: false, status: 423, message: "Seat is currently being booked by someone else" };
+      }
+    }
+
+    const result =
+      strategy === "locked"
+        ? await bookSeatWithLock(seatCode, userId, eventId, date, time)
+        : await bookSeatNaive(seatCode, userId, eventId, date, time);
+
+    if (!result.ok && result.status === 409) {
+      bookingFailedOversold.inc();
+    }
+    if (result.ok) {
+      bookingSuccess.inc();
+    }
+    return result;
+  } finally {
+    if (hasLock) {
+      await releaseLock(lockKey);
+    }
+  }
+};
+
 bookingRouter.post("/book-seat", async (req, res) => {
   const seatCode = typeof req.body?.seatCode === "string" ? req.body.seatCode : "";
   const userId = typeof req.body?.userId === "string" ? req.body.userId : "";
@@ -147,44 +187,15 @@ bookingRouter.post("/book-seat", async (req, res) => {
     return res.status(400).json({ message: "seatCode, userId, eventId, date, and time are required" });
   }
 
-  bookingAttempts.inc();
-
-  // Lock key now includes eventId, date and time to allow concurrent bookings for different events/slots
-  const lockKey = `${config.seatLockPrefix}${seatCode}:${eventId}:${date}:${time}`;
-  let hasLock = false;
-
   try {
-    if (strategy === "locked") {
-      hasLock = await acquireLock(lockKey, config.lockTtlSeconds);
-      if (!hasLock) {
-        bookingFailedOversold.inc();
-        return res
-          .status(423)
-          .json({ message: "Seat is currently being booked by someone else" });
-      }
-    }
-
-    const result =
-      strategy === "locked"
-        ? await bookSeatWithLock(seatCode, userId, eventId, date, time)
-        : await bookSeatNaive(seatCode, userId, eventId, date, time);
-
+    const result = await executeSeatBooking(seatCode, userId, eventId, date, time, strategy);
     if (!result.ok) {
-      if (result.status === 409) {
-        bookingFailedOversold.inc();
-      }
       return res.status(result.status).json({ message: result.message });
     }
-
-    bookingSuccess.inc();
     return res.status(201).json({ message: "Seat booked", booking: result.booking });
   } catch (error) {
     console.error("Failed to book seat", error);
     return res.status(500).json({ message: "Internal server error" });
-  } finally {
-    if (hasLock) {
-      await releaseLock(lockKey);
-    }
   }
 });
 

@@ -1,10 +1,24 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { bookSeat } from "../api";
-import { ArrowLeft, CreditCard, Smartphone, Check, Download, Share2, Ticket } from "lucide-react";
+import { bookSeat, createRazorpayOrder, verifyAndConfirmBooking } from "../api";
+import { ArrowLeft, CreditCard, Smartphone, Check, Download, ShieldCheck, Mail, Lock } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+
+const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+        if ((window as any).Razorpay) {
+            resolve(true);
+            return;
+        }
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+    });
+};
 
 export default function PaymentPage() {
     const { id } = useParams();
@@ -34,32 +48,128 @@ export default function PaymentPage() {
         eventImage: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=1000&auto=format&fit=crop"
     };
 
-    const [paymentMethod, setPaymentMethod] = useState<"card" | "gpay">("gpay");
-    const [userId, setUserId] = useState("user-123"); // Mock user
+    const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "gpay" | "card">("razorpay");
+    const [email, setEmail] = useState("");
+    const [userId, setUserId] = useState("user-123"); 
     const [processing, setProcessing] = useState(false);
     const [success, setSuccess] = useState(false);
     const [qrScanned, setQrScanned] = useState(false);
+    const [paymentRefId, setPaymentRefId] = useState<string>("SIMULATED-REF");
+    const [emailSent, setEmailSent] = useState(false);
 
     const ticketRef = useRef<HTMLDivElement>(null);
 
-    // Generate UPI payment string for QR
+    // Total calculated with fee
     const upiAmount = totalAmount + 45;
     const upiPaymentString = `upi://pay?pa=ticketrush@upi&pn=TicketRush&am=${upiAmount}&cu=INR&tn=Ticket for ${eventTitle}`;
 
-    // Auto-complete payment when QR is scanned (simulated via visibility API or user action)
+    // Auto-load razorpay script on mount
+    useEffect(() => {
+        loadRazorpayScript();
+    }, []);
+
+    // Auto-complete payment when QR is scanned in simulated mode
     useEffect(() => {
         if (qrScanned && paymentMethod === "gpay" && !processing && !success) {
-            handlePayment();
+            handleSimulatedPayment();
         }
     }, [qrScanned]);
 
-    const handlePayment = async () => {
+    const handleRazorpayPayment = async () => {
+        if (!email.trim() || !email.includes("@")) {
+            alert("Please provide a valid email address to receive your ticket confirmation receipt.");
+            return;
+        }
+
+        setProcessing(true);
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) {
+            alert("Failed to load Razorpay Gateway. Please check your internet connection.");
+            setProcessing(false);
+            return;
+        }
+
+        try {
+            // 1. Create Order on Backend
+            const orderRes = await createRazorpayOrder(upiAmount, eventId || id || "", selectedSeats);
+            if (!orderRes.ok) {
+                const errorMsg = "message" in orderRes ? orderRes.message : "Unknown gateway error";
+                alert(`❌ Payment Gateway Initialization Failed: ${errorMsg}`);
+                setProcessing(false);
+                return;
+            }
+
+            // 2. Open Razorpay Checkout Modal
+            const options = {
+                key: orderRes.data.keyId,
+                amount: orderRes.data.amount,
+                currency: orderRes.data.currency,
+                name: "TicketRush",
+                description: `${eventTitle} (${selectedSeats.length} Seats)`,
+                image: eventImage,
+                order_id: orderRes.data.orderId,
+                handler: async (response: any) => {
+                    setProcessing(true);
+                    // 3. Verify signature and confirm tickets on Backend
+                    const verifyRes = await verifyAndConfirmBooking({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature,
+                        seatCodes: selectedSeats,
+                        userId,
+                        email: email.trim(),
+                        eventId: eventId || id || "",
+                        eventTitle: eventTitle || "Event",
+                        eventArtist: eventArtist || "Live Performance",
+                        eventVenue: eventVenue || "Venue",
+                        date,
+                        time,
+                        totalAmount: upiAmount,
+                    });
+
+                    if (!verifyRes.ok) {
+                        const errorMsg = "message" in verifyRes ? verifyRes.message : "Verification failed";
+                        alert(`❌ Booking Failed: ${errorMsg}`);
+                        setProcessing(false);
+                    } else {
+                        setPaymentRefId(response.razorpay_payment_id);
+                        setEmailSent(!!verifyRes.emailSent);
+                        setSuccess(true);
+                        setProcessing(false);
+                    }
+                },
+                prefill: {
+                    email: email.trim(),
+                    contact: "9988776655",
+                },
+                theme: {
+                    color: "#7c3aed",
+                },
+                modal: {
+                    ondismiss: () => {
+                        setProcessing(false);
+                    },
+                },
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.on("payment.failed", (response: any) => {
+                alert(`❌ Payment Failed: ${response.error.description || "Transaction declined"}`);
+                setProcessing(false);
+            });
+            rzp.open();
+        } catch (error) {
+            console.error("Payment checkout error:", error);
+            alert("An error occurred starting checkout.");
+            setProcessing(false);
+        }
+    };
+
+    const handleSimulatedPayment = async () => {
         setProcessing(true);
         try {
-            // Simulate Payment Delay
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise((resolve) => setTimeout(resolve, 1500));
 
-            // Book each seat with eventId
             const promises = selectedSeats.map((code: string) =>
                 bookSeat(code, userId, "locked", eventId || id || "", date, time)
             );
@@ -74,6 +184,7 @@ export default function PaymentPage() {
                 return;
             }
 
+            setPaymentRefId(`MOCK-TXN-${Math.floor(100000 + Math.random() * 900000)}`);
             setSuccess(true);
         } catch (error) {
             alert("Payment failed or seats taken!");
@@ -83,7 +194,6 @@ export default function PaymentPage() {
         }
     };
 
-    // Handler for QR scan simulation (on mobile, user taps "I've Paid")
     const handleQrScanned = () => {
         setQrScanned(true);
     };
@@ -95,19 +205,19 @@ export default function PaymentPage() {
             const canvas = await html2canvas(ticketRef.current, {
                 backgroundColor: "#0b0c15",
                 scale: 2,
-                useCORS: true,       // Added for external images
-                allowTaint: true,    // Added permissions
+                useCORS: true,
+                allowTaint: true,
             });
             const imgData = canvas.toDataURL("image/png");
 
             const pdf = new jsPDF({
                 orientation: "portrait",
                 unit: "px",
-                format: [canvas.width / 2, canvas.height / 2]
+                format: [canvas.width / 2, canvas.height / 2],
             });
 
             pdf.addImage(imgData, "PNG", 0, 0, canvas.width / 2, canvas.height / 2);
-            pdf.save("TicketRush-Pass.pdf");
+            pdf.save(`TicketRush-${selectedSeats.join("_")}.pdf`);
         } catch (err) {
             console.error("PDF generation failed", err);
         }
@@ -121,7 +231,19 @@ export default function PaymentPage() {
                         <Check className="w-10 h-10 text-white" />
                     </div>
                     <h1 className="text-3xl font-bold mb-2">You're Going!</h1>
-                    <p className="text-slate-400">Your seats have been secured.</p>
+                    <p className="text-slate-400">Your seats have been securely reserved.</p>
+                    
+                    {emailSent ? (
+                        <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full bg-brand-purple/20 text-brand-gold text-xs font-semibold border border-brand-purple/40">
+                            <Mail className="w-3.5 h-3.5" /> Confirmation email & ticket receipt sent to {email}!
+                        </div>
+                    ) : (
+                        email && (
+                            <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700">
+                                ℹ️ Booking confirmed (Email delivery pending or in mock mode)
+                            </div>
+                        )
+                    )}
                 </div>
 
                 {/* TICKET UI */}
@@ -132,7 +254,7 @@ export default function PaymentPage() {
                             src={eventImage}
                             className="w-full h-full object-cover"
                             alt="Concert"
-                            crossOrigin="anonymous" // Added CORS header
+                            crossOrigin="anonymous"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-theatre-900 to-transparent" />
                         <div className="absolute bottom-4 left-6">
@@ -150,7 +272,7 @@ export default function PaymentPage() {
 
                     {/* Details */}
                     <div className="p-6 pt-2">
-                        <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="grid grid-cols-2 gap-4 mb-4">
                             <div>
                                 <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Date</div>
                                 <div className="font-semibold text-slate-200">{date}</div>
@@ -169,9 +291,14 @@ export default function PaymentPage() {
                             </div>
                         </div>
 
+                        <div className="mb-6 pt-3 border-t border-slate-700/50 flex items-center justify-between">
+                            <span className="text-xs text-slate-400 font-medium">Payment Ref ID:</span>
+                            <span className="font-mono text-xs text-brand-gold">{paymentRefId}</span>
+                        </div>
+
                         <div className="flex justify-center mb-6">
                             <div className="bg-white p-2 rounded-lg">
-                                <QRCodeSVG value={`TICKET-${eventId || id}-${selectedSeats.join('-')}-${date}-${time}`} size={100} />
+                                <QRCodeSVG value={`TICKET-${eventId || id}-${selectedSeats.join('-')}-${paymentRefId}`} size={100} />
                             </div>
                         </div>
 
@@ -184,7 +311,7 @@ export default function PaymentPage() {
                 <div className="flex gap-4">
                     <button
                         onClick={downloadTicket}
-                        className="bg-brand-purple hover:bg-violet-600 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-colors"
+                        className="bg-brand-purple hover:bg-violet-600 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-colors shadow-glow-purple"
                     >
                         <Download className="w-5 h-5" /> Download PDF
                     </button>
@@ -216,6 +343,7 @@ export default function PaymentPage() {
                                 src={eventImage}
                                 className="w-24 h-24 rounded-lg object-cover"
                                 alt="Show"
+                                crossOrigin="anonymous"
                             />
                             <div>
                                 <h3 className="font-bold text-xl text-white">{eventTitle}</h3>
@@ -247,48 +375,120 @@ export default function PaymentPage() {
                             <span className="font-bold text-2xl text-brand-gold">₹{upiAmount}</span>
                         </div>
                     </div>
+
+                    <div className="bg-gradient-to-r from-purple-900/40 to-slate-800/80 border border-brand-purple/30 rounded-2xl p-4 flex items-start gap-3">
+                        <ShieldCheck className="w-6 h-6 text-brand-gold flex-shrink-0 mt-0.5" />
+                        <div>
+                            <h4 className="font-bold text-white text-sm">100% Guaranteed & Secure Booking</h4>
+                            <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                                Your tickets are protected by instant Redis lock verification. If any seat conflict occurs during checkout, you will receive an automatic, instant full refund.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Payment Method */}
                 <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-white mb-4">Payment Method</h2>
+                    <div>
+                        <h2 className="text-2xl font-bold text-white mb-1">Contact & Delivery</h2>
+                        <p className="text-xs text-slate-400 mb-4">We'll email your digital tickets immediately after payment.</p>
+                        <div className="relative">
+                            <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-500" />
+                            <input 
+                                type="email" 
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Enter your email address (e.g., aditya@example.com)" 
+                                className="w-full bg-theatre-800 border border-theatre-600 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple text-sm transition-all" 
+                            />
+                        </div>
+                    </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-6">
+                    <h2 className="text-2xl font-bold text-white mb-4 pt-2">Select Payment Method</h2>
+
+                    <div className="grid grid-cols-3 gap-3 mb-6">
+                        <button
+                            onClick={() => setPaymentMethod("razorpay")}
+                            className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all relative ${paymentMethod === "razorpay"
+                                    ? "bg-brand-purple/20 border-brand-purple text-white shadow-glow-purple font-bold"
+                                    : "bg-theatre-800 border-theatre-700 text-slate-400 hover:bg-theatre-700"
+                                }`}
+                        >
+                            <span className="absolute -top-2 bg-brand-gold text-black text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow">Recommended</span>
+                            <ShieldCheck className="w-6 h-6 text-brand-gold" />
+                            <span className="text-xs text-center">Razorpay Secure</span>
+                        </button>
                         <button
                             onClick={() => setPaymentMethod("gpay")}
-                            className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${paymentMethod === "gpay"
-                                    ? "bg-brand-purple/20 border-brand-purple text-white shadow-glow-purple"
+                            className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === "gpay"
+                                    ? "bg-brand-purple/20 border-brand-purple text-white shadow-glow-purple font-bold"
                                     : "bg-theatre-800 border-theatre-700 text-slate-400 hover:bg-theatre-700"
                                 }`}
                         >
                             <Smartphone className="w-6 h-6" />
-                            <span className="font-medium">Google Pay</span>
+                            <span className="text-xs text-center">Simulated UPI</span>
                         </button>
                         <button
                             onClick={() => setPaymentMethod("card")}
-                            className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${paymentMethod === "card"
-                                    ? "bg-brand-purple/20 border-brand-purple text-white shadow-glow-purple"
+                            className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === "card"
+                                    ? "bg-brand-purple/20 border-brand-purple text-white shadow-glow-purple font-bold"
                                     : "bg-theatre-800 border-theatre-700 text-slate-400 hover:bg-theatre-700"
                                 }`}
                         >
                             <CreditCard className="w-6 h-6" />
-                            <span className="font-medium">Card</span>
+                            <span className="text-xs text-center">Demo Card</span>
                         </button>
                     </div>
+
+                    {paymentMethod === "razorpay" && (
+                        <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 animate-in fade-in zoom-in duration-300">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-sm font-semibold text-white">Supported Payment Modes:</span>
+                                <div className="flex items-center gap-2 text-xs text-brand-gold font-bold">
+                                    <Lock className="w-3.5 h-3.5" /> SSL 256-Bit Encryption
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-slate-300 mb-6">
+                                <div className="bg-theatre-900/80 p-2.5 rounded-lg text-center font-medium border border-slate-700/60">UPI / GPay</div>
+                                <div className="bg-theatre-900/80 p-2.5 rounded-lg text-center font-medium border border-slate-700/60">Credit/Debit</div>
+                                <div className="bg-theatre-900/80 p-2.5 rounded-lg text-center font-medium border border-slate-700/60">NetBanking</div>
+                                <div className="bg-theatre-900/80 p-2.5 rounded-lg text-center font-medium border border-slate-700/60">Wallets</div>
+                            </div>
+
+                            <button
+                                onClick={handleRazorpayPayment}
+                                disabled={processing}
+                                className="w-full bg-brand-gold hover:bg-yellow-400 text-black font-bold py-4 rounded-xl shadow-glow transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base"
+                            >
+                                {processing ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                        Connecting to Razorpay...
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShieldCheck className="w-5 h-5" /> Pay ₹{upiAmount} securely
+                                    </>
+                                )}
+                            </button>
+                            <p className="text-[11px] text-slate-500 text-center mt-3">
+                                You will be directed to Razorpay's safe checkout portal.
+                            </p>
+                        </div>
+                    )}
 
                     {paymentMethod === "gpay" && (
                         <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 text-center animate-in fade-in zoom-in duration-300">
                             <div className="bg-white p-4 rounded-xl inline-block mb-4">
                                 <QRCodeSVG value={upiPaymentString} size={192} />
                             </div>
-                            <p className="text-sm text-slate-400 mb-2">Scan this QR code with any UPI app to pay</p>
+                            <p className="text-sm text-slate-400 mb-2">Scan this QR code with any UPI app to test mock payment</p>
                             <div className="mt-4 text-brand-gold font-bold text-xl mb-4">₹{upiAmount}</div>
-                            
-                            {/* Confirm payment button for mobile users */}
+
                             <button
                                 onClick={handleQrScanned}
                                 disabled={processing || qrScanned}
-                                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
                             >
                                 {qrScanned ? (
                                     <>
@@ -296,44 +496,45 @@ export default function PaymentPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <Smartphone className="w-5 h-5" /> I've Completed Payment
+                                        <Smartphone className="w-5 h-5" /> I've Completed Mock Payment
                                     </>
                                 )}
                             </button>
-                            <p className="text-xs text-slate-500 mt-2">After scanning and paying, tap the button above</p>
+                            <p className="text-xs text-slate-500 mt-2">After testing QR scan, tap the button above to simulate transaction</p>
                         </div>
                     )}
 
                     {paymentMethod === "card" && (
                         <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 space-y-4 animate-in fade-in zoom-in duration-300">
-                            <input type="text" placeholder="Card Number" className="w-full bg-theatre-900 border border-theatre-600 rounded-lg px-4 py-3 text-white focus:border-brand-purple focus:outline-none" />
+                            <p className="text-xs text-brand-gold">Demo Mode Card Simulation</p>
+                            <input type="text" placeholder="Card Number (4242 ...)" defaultValue="4242 4242 4242 4242" className="w-full bg-theatre-900 border border-theatre-600 rounded-lg px-4 py-3 text-white focus:border-brand-purple focus:outline-none text-sm" />
                             <div className="grid grid-cols-2 gap-4">
-                                <input type="text" placeholder="MM/YY" className="w-full bg-theatre-900 border border-theatre-600 rounded-lg px-4 py-3 text-white focus:border-brand-purple focus:outline-none" />
-                                <input type="text" placeholder="CVV" className="w-full bg-theatre-900 border border-theatre-600 rounded-lg px-4 py-3 text-white focus:border-brand-purple focus:outline-none" />
+                                <input type="text" placeholder="MM/YY" defaultValue="12/28" className="w-full bg-theatre-900 border border-theatre-600 rounded-lg px-4 py-3 text-white focus:border-brand-purple focus:outline-none text-sm" />
+                                <input type="text" placeholder="CVV" defaultValue="123" className="w-full bg-theatre-900 border border-theatre-600 rounded-lg px-4 py-3 text-white focus:border-brand-purple focus:outline-none text-sm" />
                             </div>
-                            <input type="text" placeholder="Cardholder Name" className="w-full bg-theatre-900 border border-theatre-600 rounded-lg px-4 py-3 text-white focus:border-brand-purple focus:outline-none" />
+                            <input type="text" placeholder="Cardholder Name" defaultValue="Aditya Kumar" className="w-full bg-theatre-900 border border-theatre-600 rounded-lg px-4 py-3 text-white focus:border-brand-purple focus:outline-none text-sm" />
+
+                            <button
+                                onClick={handleSimulatedPayment}
+                                disabled={processing}
+                                className="w-full bg-brand-gold hover:bg-yellow-400 text-black font-bold py-4 rounded-xl shadow-glow transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-base mt-4"
+                            >
+                                {processing ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                        Simulating Bank Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        Pay ₹{upiAmount} via Demo Card
+                                    </>
+                                )}
+                            </button>
                         </div>
                     )}
 
-                    <button
-                        onClick={handlePayment}
-                        disabled={processing || (paymentMethod === "gpay" && !qrScanned)}
-                        className="w-full bg-brand-gold hover:bg-yellow-400 text-black font-bold py-4 rounded-xl shadow-glow transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                        {processing ? (
-                            <>
-                                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                Pay ₹{upiAmount}
-                            </>
-                        )}
-                    </button>
-
                     <p className="text-xs text-center text-slate-500">
-                        By proceeding, you agree to our Terms of Service.
+                        By proceeding, you agree to TicketRush Terms of Service and Privacy Policy.
                     </p>
                 </div>
             </div>

@@ -4,6 +4,7 @@ import { getSeats, holdSeats, fetchEventById } from "../api";
 import { Seat } from "../types";
 import { ChevronLeft, Calendar, Clock, Info, Plus, Minus, Ticket, Users, ShieldCheck } from "lucide-react";
 import { EventData } from "../data/events";
+import { useToast } from "../components/Toast";
 
 const getSessionUserId = () => {
     let uid = sessionStorage.getItem("ticketrush_user_id");
@@ -17,6 +18,7 @@ const getSessionUserId = () => {
 export default function BookingPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { toast } = useToast();
     const [seats, setSeats] = useState<Seat[]>([]);
     const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
@@ -97,7 +99,7 @@ export default function BookingPage() {
         setHolding(false);
 
         if (!res.ok) {
-            alert(`⚠️ Cannot proceed to checkout: ${res.message}`);
+            toast(res.message, { type: "error", title: "Cannot Proceed to Checkout" });
             fetchSeats(false);
             return;
         }
@@ -244,7 +246,7 @@ export default function BookingPage() {
                 return r >= startRow && r <= endRow && !s.isBooked && !isHeldByOther && !selectedSeats.includes(s.code);
             });
             if (!anyAvailable) {
-                alert("No more tickets available in this category for the selected time!");
+                toast("No more tickets available in this category for the selected time!", { type: "warning" });
             }
         }
     };

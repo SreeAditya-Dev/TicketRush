@@ -21,7 +21,10 @@ paymentRouter.post("/payment/create-order", async (req, res) => {
       return res.status(400).json({ message: "Invalid payment amount" });
     }
 
-    const receiptId = `rcpt_${eventId}_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+    // Razorpay requires `receipt` to be at most 40 characters,
+    // so sanitize/truncate the eventId and use a compact base36 timestamp.
+    const safeEventId = eventId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 10);
+    const receiptId = `rcpt_${safeEventId}_${Date.now().toString(36)}_${crypto.randomBytes(3).toString("hex")}`;
     const order = await paymentService.createOrder(amount, receiptId);
 
     return res.status(200).json({

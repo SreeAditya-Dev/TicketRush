@@ -286,58 +286,67 @@ export default function BookingPage() {
 
     return (
         <div className="min-h-screen bg-[#f4f6f9] pb-32 text-slate-700 font-sans selection:bg-blue-600 selection:text-white">
-            {/* Top Bar */}
-            <header className="bg-white/90 backdrop-blur-xl border-b border-slate-200 px-4 py-3 sticky top-0 z-30 flex items-center justify-between shadow-2xs">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-600 hover:text-slate-900">
-                        <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <div>
-                        <h1 className="text-base font-black text-slate-900 tracking-tight">{event?.title || "Event"}</h1>
-                        <p className="text-xs font-bold text-blue-600 flex items-center gap-1">
-                            {event?.venue || "Venue"}
-                        </p>
+            {/* Top Event & Schedule Card */}
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-2 pb-6">
+                <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm mb-4">
+                    <div className="flex items-center gap-4 mb-6 pb-5 border-b border-slate-100">
+                        <button onClick={() => navigate(-1)} className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors border border-slate-200/60 text-slate-700 hover:text-slate-950">
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{event?.title || "Event"}</h1>
+                            <p className="text-sm font-bold text-blue-600 flex items-center gap-1.5 mt-0.5">
+                                {event?.venue || "Venue"}
+                            </p>
+                        </div>
                     </div>
-                </div>
-            </header>
 
-            {/* Date & Time Selector */}
-            <div className="bg-white border-b border-slate-200 pt-4 pb-2 shadow-2xs">
-                <div className="flex gap-3 overflow-x-auto px-4 pb-4 no-scrollbar">
-                    {DATES.map((date) => (
-                        <button
-                            key={date}
-                            onClick={() => setSelectedDate(date)}
-                            className={`
-                                flex-shrink-0 px-4 py-3 rounded-xl flex flex-col items-center gap-1 transition-all border
-                                ${selectedDate === date
-                                    ? "bg-blue-600 border-blue-600 text-white shadow-xs"
-                                    : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900"
-                                }
-                            `}
-                        >
-                            <Calendar className="w-3.5 h-3.5 opacity-70" />
-                            <span className="text-xs font-bold whitespace-nowrap">{date}</span>
-                        </button>
-                    ))}
-                </div>
-                <div className="flex gap-2 overflow-x-auto px-4 pb-3 no-scrollbar border-t border-slate-100 pt-3">
-                    {TIMES.map((time) => (
-                        <button
-                            key={time}
-                            onClick={() => setSelectedTime(time)}
-                            className={`
-                                flex-shrink-0 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all flex items-center gap-1.5
-                                ${selectedTime === time
-                                    ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900"
-                                }
-                            `}
-                        >
-                            <Clock className="w-3 h-3" />
-                            {time}
-                        </button>
-                    ))}
+                    {/* Date & Time Selector */}
+                    <div className="space-y-4">
+                        <div>
+                            <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block mb-2">Select Date</span>
+                            <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+                                {DATES.map((date) => (
+                                    <button
+                                        key={date}
+                                        onClick={() => setSelectedDate(date)}
+                                        className={`
+                                            flex-shrink-0 px-4 py-3 rounded-2xl flex flex-col items-center gap-1.5 transition-all border
+                                            ${selectedDate === date
+                                                ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/25 scale-[1.02]"
+                                                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900"
+                                            }
+                                        `}
+                                    >
+                                        <Calendar className="w-4 h-4 opacity-80" />
+                                        <span className="text-xs font-bold whitespace-nowrap">{date}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block mb-2">Select Show Time</span>
+                            <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
+                                {TIMES.map((time) => (
+                                    <button
+                                        key={time}
+                                        onClick={() => setSelectedTime(time)}
+                                        className={`
+                                            flex-shrink-0 px-4 py-2 rounded-xl border text-xs font-extrabold transition-all flex items-center gap-1.5
+                                            ${selectedTime === time
+                                                ? "bg-slate-900 text-white border-slate-900 shadow-sm scale-[1.02]"
+                                                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                                            }
+                                        `}
+                                    >
+                                        <Clock className="w-3.5 h-3.5" />
+                                        {time}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

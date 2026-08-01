@@ -34,7 +34,7 @@ export default function ShowList() {
 
                 <div className="relative z-30 max-w-7xl mx-auto px-6 w-full pt-20">
                     <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-brand-gold/20 border border-brand-gold/40 text-brand-gold text-xs font-bold tracking-wider uppercase mb-6 shadow-sm">
-                        <img src="/logo.png" alt="TicketRush Logo" className="w-4 h-4 object-contain" />
+                        <img src="/logo.png" alt="TicketRush Logo" className="w-4 h-4 rounded-md object-contain" />
                         <span>Premier Events by TicketRush</span>
                     </div>
                     <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-6 tracking-tight leading-tight">

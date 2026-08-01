@@ -10,7 +10,7 @@ export default function Layout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2.5 group">
-              <img src="/logo.png" alt="TicketRush Logo" className="w-8 h-8 object-contain group-hover:scale-105 transition-transform drop-shadow-sm" />
+              <img src="/logo.png" alt="TicketRush Logo" className="w-9 h-9 rounded-xl object-contain group-hover:scale-105 transition-transform shadow-md border border-slate-700/50" />
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">
                 TicketRush
               </span>
@@ -49,7 +49,7 @@ export default function Layout() {
       <footer className="border-t border-slate-800 bg-slate-950 py-8">
         <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center gap-3 text-slate-500 text-sm">
           <div className="flex items-center gap-2 text-slate-300">
-            <img src="/logo.png" alt="TicketRush" className="h-6 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity" />
+            <img src="/logo.png" alt="TicketRush" className="h-7 w-7 rounded-lg object-contain opacity-90 hover:opacity-100 transition-opacity border border-slate-800" />
             <span className="font-bold tracking-tight text-slate-300">TicketRush</span>
           </div>
           <p>© {new Date().getFullYear()} TicketRush. High-Volume Booking Demo.</p>

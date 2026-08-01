@@ -423,67 +423,46 @@ export default function PaymentPage() {
                     </div>
                 </div>
 
-                {/* Payment Method */}
+                {/* Checkout & Payment Action */}
                 <div className="space-y-6">
-                    <div>
-                        <h2 className="text-2xl font-bold text-white mb-1">Contact & Delivery</h2>
-                        <p className="text-xs text-slate-400 mb-4">We'll email your digital tickets immediately after payment.</p>
-                        <div className="relative">
-                            <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-500" />
-                            <input 
-                                type="email" 
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="Enter your email address (e.g., aditya@example.com)" 
-                                className="w-full bg-theatre-800 border border-theatre-600 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple text-sm transition-all" 
-                            />
-                        </div>
-                    </div>
-
-                    <h2 className="text-2xl font-bold text-white mb-4 pt-2">Payment Method</h2>
-
-                    <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 animate-in fade-in zoom-in duration-300">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <ShieldCheck className="w-5 h-5 text-brand-gold" />
-                                <span className="text-sm font-bold text-white">Razorpay Secure Checkout</span>
-                                <span className="bg-brand-gold text-black text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow">Recommended</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-brand-gold font-bold">
-                                <Lock className="w-3.5 h-3.5" /> SSL 256-Bit Encryption
+                    <div className="bg-theatre-800 border border-theatre-700 rounded-2xl p-6 shadow-xl space-y-6 animate-in fade-in duration-300">
+                        <div>
+                            <h2 className="text-xl font-bold text-white mb-1">Contact & Delivery</h2>
+                            <p className="text-xs text-slate-400 mb-4">We'll email your digital tickets immediately after payment confirmation.</p>
+                            <div className="relative">
+                                <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-500" />
+                                <input 
+                                    type="email" 
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Enter your email address (e.g., aditya@example.com)" 
+                                    className="w-full bg-theatre-900 border border-theatre-600 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-500 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple text-sm transition-all" 
+                                />
                             </div>
                         </div>
 
-                        <p className="text-xs text-slate-400 mb-4">
-                            Pay securely with UPI, cards, net banking &amp; wallets via Razorpay.
-                        </p>
+                        <div className="border-t border-slate-700/60 pt-6">
+                            <button
+                                onClick={handleRazorpayPayment}
+                                disabled={processing}
+                                className="w-full bg-brand-gold hover:bg-yellow-400 text-black font-bold py-4 rounded-xl shadow-glow transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 text-base"
+                            >
+                                {processing ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                        Connecting to Gateway...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Lock className="w-5 h-5" /> Pay ₹{upiAmount} Now
+                                    </>
+                                )}
+                            </button>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-slate-300 mb-6">
-                            <div className="bg-theatre-900/80 p-2.5 rounded-lg text-center font-medium border border-slate-700/60">UPI / GPay</div>
-                            <div className="bg-theatre-900/80 p-2.5 rounded-lg text-center font-medium border border-slate-700/60">Credit/Debit</div>
-                            <div className="bg-theatre-900/80 p-2.5 rounded-lg text-center font-medium border border-slate-700/60">NetBanking</div>
-                            <div className="bg-theatre-900/80 p-2.5 rounded-lg text-center font-medium border border-slate-700/60">Wallets</div>
+                            <div className="flex items-center justify-center gap-1.5 mt-4 text-xs text-slate-400">
+                                <ShieldCheck className="w-4 h-4 text-brand-gold" /> Powered by Razorpay
+                            </div>
                         </div>
-
-                        <button
-                            onClick={handleRazorpayPayment}
-                            disabled={processing}
-                            className="w-full bg-brand-gold hover:bg-yellow-400 text-black font-bold py-4 rounded-xl shadow-glow transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base"
-                        >
-                            {processing ? (
-                                <>
-                                    <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                                    Connecting to Razorpay...
-                                </>
-                            ) : (
-                                <>
-                                    <ShieldCheck className="w-5 h-5" /> Pay ₹{upiAmount} securely
-                                </>
-                            )}
-                        </button>
-                        <p className="text-[11px] text-slate-500 text-center mt-3">
-                            You will be directed to Razorpay's safe checkout portal.
-                        </p>
                     </div>
 
                     <p className="text-xs text-center text-slate-500">

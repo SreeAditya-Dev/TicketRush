@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getSeats, holdSeats } from "../api";
+import { getSeats, holdSeats, fetchEventById } from "../api";
 import { Seat } from "../types";
 import { ChevronLeft, Calendar, Clock, Info, Plus, Minus, Ticket, Users, ShieldCheck } from "lucide-react";
-import { getEventById } from "../data/events";
+import { EventData } from "../data/events";
 
 const getSessionUserId = () => {
     let uid = sessionStorage.getItem("ticketrush_user_id");
@@ -22,9 +22,14 @@ export default function BookingPage() {
     const [loading, setLoading] = useState(true);
     const [userId] = useState<string>(getSessionUserId);
     const [holding, setHolding] = useState(false);
+    const [event, setEvent] = useState<EventData | null>(null);
 
-    // Get event data
-    const event = id ? getEventById(id) : undefined;
+    useEffect(() => {
+        if (id) {
+            fetchEventById(id).then(setEvent);
+        }
+    }, [id]);
+
     const isGA = event?.eventType === "general-admission";
 
     // Mock Date/Time
@@ -104,10 +109,11 @@ export default function BookingPage() {
                 date: selectedDate,
                 time: selectedTime,
                 eventId: id,
-                eventTitle: event.title,
-                eventArtist: event.artist,
-                eventVenue: event.venue,
-                eventImage: event.image,
+                eventTitle: event?.title || "Event",
+                eventArtist: event?.artist || "Artist",
+                eventVenue: event?.venue || "Venue",
+                eventImage: event?.image || "",
+                eventType: event?.eventType || "seated",
                 userId,
                 expiresIn: res.expiresIn || 300,
             }

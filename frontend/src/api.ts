@@ -21,6 +21,28 @@ export const getSeats = async (
   return response.data.seats;
 };
 
+import { EventData } from "./data/events";
+
+export const fetchEvents = async (): Promise<EventData[]> => {
+  try {
+    const response = await api.get<{ events: EventData[] }>("/events");
+    return response.data.events || [];
+  } catch (error) {
+    console.error("Error fetching events from API:", error);
+    return [];
+  }
+};
+
+export const fetchEventById = async (id: string): Promise<EventData | null> => {
+  try {
+    const response = await api.get<{ event: EventData | null }>(`/events/${id}`);
+    return response.data.event || null;
+  } catch (error) {
+    console.error("Error fetching event by id from API:", error);
+    return null;
+  }
+};
+
 export type BookSeatResult =
   | { ok: true; message: string; booking?: any }
   | { ok: false; message: string };

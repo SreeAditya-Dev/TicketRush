@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { EVENTS, EventData } from "../data/events";
+import { EventData } from "../data/events";
+import { fetchEvents } from "../api";
 import { 
     Search, 
     Filter, 
@@ -108,23 +109,27 @@ function ListSkeletonCard() {
 }
 
 export default function EventsPage() {
+    const [events, setEvents] = useState<EventData[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
     const [sortBy, setSortBy] = useState<SortOption>("featured");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-    // Simulate event hydration and smooth loading transition on page reload
+    // Fetch live events from PostgreSQL database via backend API
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 700);
-        return () => clearTimeout(timer);
+        setIsLoading(true);
+        fetchEvents()
+            .then(data => {
+                setEvents(data);
+                setIsLoading(false);
+            })
+            .catch(() => setIsLoading(false));
     }, []);
 
     // Memoized filtering and sorting engine for peak 60fps performance
     const filteredEvents = useMemo(() => {
-        return EVENTS.filter((event: EventData) => {
+        return events.filter((event: EventData) => {
             const matchesCategory = selectedCategory === "All" || event.category.toLowerCase() === selectedCategory.toLowerCase();
             const query = searchQuery.trim().toLowerCase();
             const matchesSearch = !query || 
@@ -147,7 +152,7 @@ export default function EventsPage() {
                     return 0; // Maintain official editorial curation order
             }
         });
-    }, [searchQuery, selectedCategory, sortBy]);
+    }, [events, searchQuery, selectedCategory, sortBy]);
 
     const handleClearFilters = () => {
         setSearchQuery("");
@@ -264,7 +269,7 @@ export default function EventsPage() {
                 {/* Live Count Indicator */}
                 <div className="flex items-center justify-between mb-6 px-2">
                     <span className="text-sm text-slate-400">
-                        Showing <strong className="text-white font-bold">{filteredEvents.length}</strong> of {EVENTS.length} shows
+                        Showing <strong className="text-white font-bold">{filteredEvents.length}</strong> of {events.length} shows
                     </span>
                     {(searchQuery || selectedCategory !== "All" || sortBy !== "featured") && (
                         <button

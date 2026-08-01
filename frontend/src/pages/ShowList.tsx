@@ -1,10 +1,16 @@
 import { Link } from "react-router-dom";
 import { Calendar, MapPin, Clock, Music, Star, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useRef } from "react";
-import { EVENTS } from "../data/events";
+import { useState, useRef, useEffect } from "react";
+import { EventData } from "../data/events";
+import { fetchEvents } from "../api";
 
 export default function ShowList() {
+    const [events, setEvents] = useState<EventData[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        fetchEvents().then(setEvents);
+    }, []);
 
     const scroll = (direction: 'left' | 'right') => {
         if (scrollRef.current) {
@@ -59,7 +65,7 @@ export default function ShowList() {
                             to="/events"
                             className="hidden sm:inline-flex items-center gap-1.5 text-xs sm:text-sm text-brand-gold hover:text-yellow-300 font-bold px-4 py-2.5 bg-brand-gold/10 hover:bg-brand-gold/20 border border-brand-gold/30 rounded-xl transition-all duration-300 shadow-sm"
                         >
-                            <span>View All ({EVENTS.length}) Shows</span>
+                            <span>View All ({events.length}) Shows</span>
                             <ArrowRight className="w-4 h-4" />
                         </Link>
                         <button
@@ -82,7 +88,7 @@ export default function ShowList() {
                     className="flex gap-6 overflow-x-auto pb-8 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                    {EVENTS.map((show, index) => (
+                    {events.map((show, index) => (
                         <div
                             key={show.id}
                             className="flex-shrink-0 w-[300px] md:w-[350px] snap-center group relative bg-theatre-800 rounded-3xl overflow-hidden border border-theatre-700 hover:border-brand-purple/50 transition-all duration-500 hover:shadow-2xl hover:shadow-brand-purple/20 hover:-translate-y-2"

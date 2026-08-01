@@ -30,3 +30,21 @@ model Booking {
 
   @@unique([seatId, eventId, date, time])
 }
+
+model Event {
+  id          String   @id
+  title       String
+  artist      String
+  date        String
+  time        String
+  venue       String
+  image       String
+  price       String
+  priceValue  Int
+  category    String
+  tags        String[]
+  rating      Float
+  eventType   String   @default("seated")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

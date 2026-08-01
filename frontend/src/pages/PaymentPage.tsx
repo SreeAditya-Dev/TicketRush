@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { bookSeat, createRazorpayOrder, verifyAndConfirmBooking, releaseHolds } from "../api";
+import { bookSeat, createRazorpayOrder, verifyAndConfirmBooking, releaseHolds, fetchEventById } from "../api";
 import { ArrowLeft, CreditCard, Smartphone, Check, Download, ShieldCheck, Mail, Lock, Timer } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { getEventById } from "../data/events";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -37,12 +36,25 @@ export default function PaymentPage() {
         eventArtist = "Artist",
         eventVenue = "Venue",
         eventImage = "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?q=80&w=1000&auto=format&fit=crop",
+        eventType: initialEventType = "seated",
         userId = "user-123",
         expiresIn = 300
     } = location.state || {};
 
-    const event = getEventById(eventId || id || "");
-    const isGA = event?.eventType === "general-admission";
+    const [currentEventType, setCurrentEventType] = useState<string>(initialEventType);
+
+    useEffect(() => {
+        const evId = eventId || id;
+        if (evId && !location.state?.eventType) {
+            fetchEventById(evId).then(data => {
+                if (data && data.eventType) {
+                    setCurrentEventType(data.eventType);
+                }
+            });
+        }
+    }, [eventId, id, location.state?.eventType]);
+
+    const isGA = currentEventType === "general-admission";
 
     const getTicketSummary = () => {
         if (!isGA) return selectedSeats.map((s: string) => s.replace('S', '')).join(', ');

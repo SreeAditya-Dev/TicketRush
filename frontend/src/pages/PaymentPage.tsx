@@ -6,6 +6,7 @@ import { useToast } from "../components/Toast";
 import { QRCodeSVG } from "qrcode.react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import AdmitOneTicket from "@/components/ui/admit-one-ticket";
 
 const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -274,69 +275,39 @@ export default function PaymentPage() {
                     )}
                 </div>
 
-                {/* TICKET UI */}
-                <div ref={ticketRef} className="bg-white border border-slate-200 rounded-3xl overflow-hidden max-w-sm w-full shadow-xl relative mb-8 text-slate-800">
-                    {/* Top Section */}
-                    <div className="relative h-48">
-                        <img
-                            src={eventImage}
-                            className="w-full h-full object-cover"
-                            alt="Concert"
-                            crossOrigin="anonymous"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-200 flex items-center gap-2 shadow-sm z-20">
-                            <img src="/logo.png" alt="TicketRush Logo" className="w-5 h-5 rounded-md object-contain" crossOrigin="anonymous" />
-                            <span className="text-xs font-black tracking-wide text-slate-900">TicketRush</span>
-                        </div>
-                        <div className="absolute bottom-4 left-6 z-20">
-                            <h2 className="text-2xl font-black text-white">{eventTitle}</h2>
-                            <p className="text-blue-300 font-bold">{eventArtist}</p>
-                        </div>
-                    </div>
+                {/* INTERACTIVE 3D WEBGL TICKET UI */}
+                <div className="w-full flex items-center justify-center my-6 overflow-x-auto pb-6">
+                    <div ref={ticketRef} className="origin-center shadow-2xl rounded-3xl">
+                        <AdmitOneTicket
+                            presenter={`${eventArtist || "TicketRush Official"} presents`}
+                            event={eventTitle || "Live Experience 2026"}
+                            name={isGA ? "GENERAL ADMISSION" : `SEATS: ${getTicketSummary()}`}
+                            venue={eventVenue || "Staging Arena"}
+                            dates={`${date} • ${time}`}
+                            stubText="ADMIT ONE"
+                            watermark="2026"
+                            width={741}
+                        >
+                            {/* Perfectly Placed QR Code and Verified Details Badge on the Right side of main ticket body */}
+                            <div className="absolute right-[190px] top-1/2 -translate-y-1/2 flex flex-col items-center justify-center p-4 bg-white/95 backdrop-blur-md rounded-2xl border border-white/60 shadow-xl shadow-black/20 z-20 w-[150px]">
+                                <div className="flex items-center gap-1.5 mb-3 bg-slate-950 text-white px-3 py-1 rounded-full w-full justify-center shadow-xs">
+                                    <img src="/logo.png" alt="TicketRush Logo" className="w-4 h-4 rounded-md object-contain shrink-0" crossOrigin="anonymous" />
+                                    <span className="text-[10px] font-black uppercase tracking-wider truncate">TicketRush</span>
+                                </div>
 
-                    {/* Perforation */}
-                    <div className="relative flex items-center justify-between px-2 -mt-3 z-10">
-                        <div className="w-6 h-6 bg-[#f4f6f9] border-r border-slate-200 rounded-full -ml-4" />
-                        <div className="flex-1 border-t-2 border-dashed border-slate-300 mx-2" />
-                        <div className="w-6 h-6 bg-[#f4f6f9] border-l border-slate-200 rounded-full -mr-4" />
-                    </div>
+                                <div className="p-2 bg-white rounded-xl border border-slate-200 shadow-xs">
+                                    <QRCodeSVG value={`TICKET-${eventId || id}-${selectedSeats.join('-')}-${paymentRefId}`} size={96} level="M" />
+                                </div>
 
-                    {/* Details */}
-                    <div className="p-6 pt-3">
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <div className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Date</div>
-                                <div className="font-bold text-slate-900">{date}</div>
+                                <div className="mt-2.5 text-[10px] font-mono font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200/80 text-center w-full truncate">
+                                    {paymentRefId || "TXN-APPROVED"}
+                                </div>
+                                <div className="text-[9px] font-extrabold text-emerald-600 uppercase tracking-wider mt-1.5 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span>
+                                    <span>Verified Gate QR</span>
+                                </div>
                             </div>
-                            <div>
-                                <div className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Time</div>
-                                <div className="font-bold text-slate-900">{time}</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Venue</div>
-                                <div className="font-bold text-slate-900">{eventVenue}</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">{isGA ? "Admission Type" : "Seats"}</div>
-                                <div className="font-black text-blue-600">{getTicketSummary()}</div>
-                            </div>
-                        </div>
-
-                        <div className="mb-6 pt-3 border-t border-slate-100 flex items-center justify-between">
-                            <span className="text-xs text-slate-500 font-semibold">Payment Ref ID:</span>
-                            <span className="font-mono text-xs font-bold text-slate-900">{paymentRefId}</span>
-                        </div>
-
-                        <div className="flex justify-center mb-6">
-                            <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl shadow-2xs">
-                                <QRCodeSVG value={`TICKET-${eventId || id}-${selectedSeats.join('-')}-${paymentRefId}`} size={110} />
-                            </div>
-                        </div>
-
-                        <div className="text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                            Scan at Entry • Gate 4A
-                        </div>
+                        </AdmitOneTicket>
                     </div>
                 </div>
 

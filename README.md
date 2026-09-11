@@ -99,79 +99,81 @@ We rely on custom metrics to prove the system works:
 ```mermaid
 sequenceDiagram
     autonumber
-    
-    %% DEFINING PARTICIPANTS WITH ICONS
+
     actor User as 👤 User
+    participant UI as 🖥️ Web UI
     participant API as 🟢 Node API
     participant Redis as 🔴 Redis
     participant DB as 🐘 Postgres
+    participant RZP as 💳 Razorpay
+    participant Resend as ✉️ Resend
     participant Metrics as 🔥 Prometheus
 
-    %% FLOW START
-    User->>API: ⚡ POST /book-seat (SeatID: 10)
-    
-    %% CRITICAL SECTION BLOCK
-    rect rgb(255, 248, 225)
+    User->>UI: Select seat & click Buy
+    UI->>API: POST /book-seat (SeatID: 10)
+
     Note right of API: 🔒 CRITICAL SECTION (Race Condition Protection)
-    
+
     API->>Redis: SET seat_10_lock true NX EX 10
-    
-    alt ❌ Lock Failed (Already Locked)
+
+    alt ❌ Lock Failed
         Redis-->>API: 0 (False)
-        API-->>User: 🚫 423 Locked / Retry Later
+        API-->>UI: 423 Locked / Retry Later
+        UI-->>User: Seat temporarily unavailable
     else ✅ Lock Acquired
         Redis-->>API: OK
-        
-        Note over API, DB: Start ACID Transaction
+
+        Note over API,DB: Start ACID Transaction
         API->>DB: BEGIN TRANSACTION
-        API->>DB: SELECT * FROM seats WHERE id=10 FOR UPDATE
-        
+        API->>DB: SELECT seat WHERE id=10 FOR UPDATE
+
         alt ⚠️ Seat Already Booked
             DB-->>API: is_booked = true
             API->>DB: ROLLBACK
-            API-->>User: ❌ 400 Seat Gone
-            API->>Metrics: 📈 Inc booking_failed_oversold
+            API-->>UI: 400 Seat Gone
+            API->>Metrics: Inc booking_failed_oversold
         else 🎫 Seat Available
             DB-->>API: is_booked = false
             API->>DB: UPDATE seats SET is_booked=true
-            API->>DB: INSERT into bookings...
+            API->>DB: INSERT INTO bookings
             API->>DB: COMMIT
-            API-->>User: 🎉 200 Success
-            API->>Metrics: 📈 Inc booking_success_total
+            API-->>UI: 200 Success
+            API->>Metrics: Inc booking_success_total
         end
-        
+
         API->>Redis: DEL seat_10_lock
     end
 
-    Note over Customer,RZP: Step 2: Payment Order & Signature Verification
-    UI->>API: POST /api/v1/payment/create-order (Amount: ₹395)
-    API->>RZP: create.order({ amount: 39500, currency: "INR" })
-    RZP-->>API: Order ID (order_P1a2B3c4D5e6F7)
-    API-->>UI: Returns Order ID
-    UI->>Customer: Renders Razorpay Secure Modal (UPI/Cards)
-    Customer->>RZP: Completes Payment & OTP Verification
-    RZP-->>UI: Returns Payment ID, Order ID & Cryptographic Signature
+    UI->>API: POST /api/v1/payment/create-order
+    API->>RZP: Create Razorpay order
+    RZP-->>API: Order ID
+    API-->>UI: Return Order ID
+    UI->>User: Open Razorpay Secure Checkout
+    User->>RZP: Complete payment
+    RZP-->>UI: Payment ID + Order ID + Signature
     UI->>API: POST /api/v1/payment/verify-and-book
 
-    Note over API,DB: Step 3: ACID Transaction & Automatic Refund Defense
-    API->>API: Verify HMAC-SHA256 Cryptographic Signature
-    API->>Redis: Acquire Atomic Mutex Lock: SET seat_lock:S005 EX 10 NX
+    Note over API,DB: ACID Transaction + Refund Defense
+    API->>API: Verify HMAC-SHA256 Signature
+    API->>Redis: SET seat_lock:S005 EX 10 NX
     API->>DB: BEGIN SERIALIZABLE TRANSACTION
-    API->>DB: INSERT INTO bookings (seatId: S005, userId, txnRef...)
-    alt Collision Detected (Unique Constraint Violation)
-        DB-->>API: Error P2002 (Duplicate Key)
+    API->>DB: INSERT INTO bookings
+
+    alt Collision Detected
+        DB-->>API: Duplicate Key
         API->>DB: ROLLBACK
-        API->>RZP: razorpay.payments.refund(payment_id)
-        API-->>UI: 409 Conflict (Automated Instant Refund Issued)
+        API->>RZP: Refund payment
+        API-->>UI: 409 Conflict
     else Transaction Confirmed
         DB-->>API: Commit Successful
-        API->>Redis: DEL seat_lock:S005 & DEL seat_hold:S005
-        API->>Resend: ASYNC sendEmail(Customer, HTML Digital Ticket Receipt)
-        API-->>UI: 200 OK (Confirmed & Ticket Generated)
-        UI-->>Customer: Renders Digital Pass with QR Code & PDF Download
+        API->>Redis: DEL seat_lock:S005
+        API->>Redis: DEL seat_hold:S005
+        API->>Resend: Send HTML digital ticket
+        API-->>UI: 200 OK
+        UI-->>User: Digital ticket + QR/PDF
     end
-    
-    Metrics->>API: 🔍 Scrape /metrics
+
+    Metrics->>API: Scrape /metrics
 ```
 
 ---
